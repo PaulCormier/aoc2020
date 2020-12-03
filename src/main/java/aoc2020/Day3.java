@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * https://adventofcode.com/2020/day/3
@@ -23,7 +24,7 @@ public class Day3 {
 
     public static void main(String[] args) {
         part1(readFile(INPUT_TXT));
-        //        part2(readFile(INPUT_TXT));
+        part2(readFile(INPUT_TXT).toArray(new String[] {}));
     }
 
     private static List<String> readFile(String fileName) {
@@ -59,32 +60,45 @@ public class Day3 {
     /**
      * Count trees encountered following slopes:
      * <ul>
-     * <li>right 1, down 1</li>
-     * <li>right 3, down 1</li>
+     * <li>Right 1, down 1</li>
+     * <li>Right 3, down 1</li>
      * <li>Right 5, down 1</li>
      * <li>Right 7, down 1</li>
      * <li>Right 1, down 2</li>
      * </ul>
      */
-    private static void part2(List<String> list) {
-        
-        int column = 0;
-        int row = 0;
-        int count = 0;
-        List<Integer> trees = new ArrayList<>();
-        
-        System.out.println(list.get(row++));
-        for (String line : list.subList(row, list.size())) {
-            column += 3;
-            column %= LINE_LENGTH;
-            if (line.charAt(column) == '#') {
-                count++;
-                System.out.println(line.substring(0, column) + "X" + line.substring(column + 1));
-            } else {
-                System.out.println(line.substring(0, column) + "O" + line.substring(column + 1));
-            }
+    private static void part2(String[] list) {
 
+        int[][] slopes = { { 1, 1 },
+                           { 3, 1 },
+                           { 5, 1 },
+                           { 7, 1 },
+                           { 1, 2 } };
+
+        List<Long> trees = new ArrayList<>();
+
+        for (int[] slope : slopes) {
+
+            int column = 0;
+            int count = 0;
+
+            for (int i = 0; i < list.length; i += slope[1]) {
+                String line = list[i];
+
+                if (line.charAt(column) == '#') {
+                    count++;
+                    System.out.println(line.substring(0, column) + "X" + line.substring(column + 1));
+                } else {
+                    System.out.println(line.substring(0, column) + "O" + line.substring(column + 1));
+                }
+
+                column += slope[0];
+                column %= LINE_LENGTH;
+            }
+            trees.add((long) count);
+            System.out.println(count + " trees are encountered.");
         }
-        System.out.println(trees + " trees are encountered.");
+        long product = trees.stream().collect(Collectors.reducing(1L, Math::multiplyExact)).longValue();
+        System.out.println(product + " is the product of the numbers of trees encountered: " + trees);
     }
 }
