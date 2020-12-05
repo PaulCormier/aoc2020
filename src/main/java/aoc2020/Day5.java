@@ -22,7 +22,7 @@ public class Day5 {
     private static void part1() {
         int maxSeatId = FileUtils.readFileToStream(INPUT_TXT)
                                  .map(Day5::parseSeatId)
-                                 .peek(System.out::println)
+                                 //.peek(System.out::println)
                                  .max(Integer::compare)
                                  .get();
         System.out.println("The highest seat id is: " + maxSeatId);
@@ -32,13 +32,16 @@ public class Day5 {
      * What is the missing seat id?
      */
     private static void part2() {
-        int maxSeatId = FileUtils.readFileToStream(INPUT_TXT)
-                                 .map(Day5::parseSeatId)
-                                 .sorted()
-//                                 .peek(System.out::println)
-                                 .min(Integer::compare)
-                                 .get();
-        System.out.println("The lowest seat id is: " + maxSeatId);
+
+        int missingSeatId = FileUtils.readFileToStream(INPUT_TXT)
+                                     .map(Day5::parseSeatId)
+                                     .sorted()
+                                     .peek(System.out::println)
+                                     // If there's more than 1 between the numbers, return the missing number.
+                                     .reduce((n1, n2) -> n2 - n1 > 1 ? n1 : n2)
+                                     .get()
+                + 1;
+        System.out.println("The missing seat id is: " + missingSeatId);
     }
 
     /**
@@ -48,21 +51,21 @@ public class Day5 {
      * @return The unique id of the seat represented in the code.
      */
     private static int parseSeatId(String seatCode) {
-//        System.out.print(seatCode + ": ");
+        //        System.out.print(seatCode + ": ");
 
         // Row id 0-127
         // Each of the first 7 characters are used in binary search for row
         String binaryRowString = seatCode.substring(0, 7).replace("F", "0").replace("B", "1");
-//        System.out.print(binaryString);
+        //        System.out.print(binaryString);
 
         int rowId = Integer.parseInt(binaryRowString, 2);
-//        System.out.print(rowId + ", ");
+        //        System.out.print(rowId + ", ");
 
         // Column id
         String binaryColumnString = seatCode.substring(7).replace("L", "0").replace("R", "1");
         int columnId = Integer.parseInt(binaryColumnString, 2);
 
-//        System.out.print(columnId + ", ");
+        //        System.out.print(columnId + ", ");
 
         // Unique id
         return rowId * 8 + columnId;
