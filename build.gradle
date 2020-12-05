@@ -1,0 +1,21 @@
+plugins {
+	id 'java'
+	id 'eclipse'
+}
+
+sourceCompatibility = 1.15
+targetCompatibility = 1.15
+
+repositories {
+    jcenter()
+}
+
+dependencies {
+	implementation 'org.apache.commons:commons-lang3:3.11'
+}
+
+eclipse {
+	jdt {
+		javaRuntimeName = "jdk-15.0.1"
+	}
+}
