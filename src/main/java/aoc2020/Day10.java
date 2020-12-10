@@ -18,8 +18,8 @@ public class Day10 {
     private static final String TEST_INPUT_2_TXT = "TestInput2-Day10.txt";
 
     public static void main(String[] args) {
-        part1();
-
+//        part1();
+        part2();
     }
 
     /**
@@ -45,8 +45,19 @@ public class Day10 {
     }
 
     /**
+     * What is the total number of distinct ways you can arrange the adapters to
+     * connect the charging outlet to your device?
      */
     private static void part2() {
+        List<Integer> joltages = FileUtils.readFileToStream(TEST_INPUT_TXT)
+                                          .map(Integer::valueOf)
+                                          .sorted()
+                                          .collect(Collectors.toList());
+
+        // Add implicit values of 0, and max+3
+        joltages.add(0, 0);
+        joltages.add(joltages.get(joltages.size() - 1) + 3);
+
     }
 
 }
