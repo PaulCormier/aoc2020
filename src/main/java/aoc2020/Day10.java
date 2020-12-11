@@ -1,18 +1,17 @@
 package aoc2020;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.ArrayRealVector;
-import org.apache.commons.math3.linear.DecompositionSolver;
-import org.apache.commons.math3.linear.LUDecomposition;
-import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.util.CombinatoricsUtils;
+import org.jgrapht.GraphPath;
+import org.jgrapht.alg.shortestpath.AllDirectedPaths;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleDirectedGraph;
 
 /**
  * https://adventofcode.com/2020/day/10
@@ -53,17 +52,16 @@ public class Day10 {
                            " Their product is: " + (aggregateDifferences.get(1).size() * (aggregateDifferences.get(3).size() + 1)));
     }
 
-    /**
-     * What is the total number of distinct ways you can arrange the adapters to
-     * connect the charging outlet to your device?
+    /*
+     * Didn't really pan out...
      */
-    private static void part2() {
-
+    /*    private static void part2() {
+    
         List<Integer> joltages = FileUtils.readFileToStream(TEST_INPUT_TXT)
                                           .map(Integer::valueOf)
                                           .sorted()
                                           .collect(Collectors.toList());
-
+    
         List<Integer> differences = new ArrayList<>();
         Integer previousJoltage = 0;
         for (Integer joltage : joltages) {
@@ -71,20 +69,20 @@ public class Day10 {
             previousJoltage = joltage;
         }
         Map<Object, List<Integer>> aggregateDifferences = differences.stream().collect(Collectors.groupingBy(d -> d));
-
+    
         // Maximum joltage (+3)
         int maxJoltage = joltages.get(joltages.size() - 1) + 3;
-
+    
         // There are only differences of 1 and 3...
         // NOPE! 
         int diff1 = aggregateDifferences.get(1).size();
         int diff3 = aggregateDifferences.get(3).size() + 1;
-
+    
         // So the total difference from 0 to max+3 must be: 1x + 3y = maxJoltage
         // But the total number of combinations is xC(diff1) + yC(diff3), for each solution.
-
+    
         System.out.printf("There are %d 1s, and %d 3s. They must sum to %d jolts.%n", diff1, diff3, maxJoltage);
-
+    
         long totalSolutions = 0;
         for (int x = 0; x <= diff1; x++) {
             for (int y = 0; y <= diff3; y++) {
@@ -97,43 +95,203 @@ public class Day10 {
                 }
             }
         }
-
+    
         System.out.println("There are " + totalSolutions + " total solutions.");
+    }
+    */
+
+    /*
+    * Not quite working...
+     */
+    private static void part2() {
+
+        // List of graph edges.
+        List<Integer> joltages = FileUtils.readFileToStream(INPUT_TXT)
+                                          .map(Integer::valueOf)
+                                          .sorted()
+                                          .collect(Collectors.toList());
+        // Add implicit 0, and max+3
+        joltages.add(0, 0);
+        int maxJoltage = joltages.get(joltages.size() - 1) + 3;
+        joltages.add(maxJoltage);
+
+        System.out.println(joltages);
+
+        List<Edge> edges = new ArrayList<>();
+
+        // Look for all potential joltages for an edge
+        Integer[] joltagesArray = joltages.toArray(Integer[]::new);
+        for (int i = 0; i < joltagesArray.length; i++) {
+            for (int j = 1; j <= 3 && j + i < joltagesArray.length; j++) {
+                if (joltagesArray[i + j] - joltagesArray[i] <= 3) {
+                    edges.add(new Edge(i, i + j));
+                    //                    edges.add(new Edge(joltagesArray[i], joltagesArray[i+j]));
+                }
+            }
+        }
+
+        System.out.println(edges);
+
+        // Number of vertices in the graph
+        final int N = joltagesArray.length;
+
+        System.out.println("Number of vertices: " + N);
+        System.out.println("Max Joltage: " + maxJoltage);
+
+        // construct graph
+        Day10.Graph g = new Day10.Graph(edges, N);
+
+        System.out.println(g.adjList);
+
+        int src = 0;
+        //                int dest = maxJoltage;
+        int dest = joltagesArray.length - 1;
+        //        int numberOfEdges = joltagesArray.length-1;
+        int maxDepth = joltagesArray.length - 1;
+
+        // Do modified BFS traversal from source vertex src
+        long totalPaths = IntStream.rangeClosed(1, maxDepth)
+                                   .mapToLong(i -> modifiedBFS(g, src, dest, i))
+                                   .sum();
+        System.out.println(totalPaths);
+        //        System.out.println(modifiedBFS(g, src, dest, maxDepth));
+    }
+
+    //    https://www.techiedelight.com/total-paths-in-digraph-from-source-to-destination-m-edges/
+    // Perform BFS on graph g starting from vertex v
+    public static int modifiedBFS(Day10.Graph g, int src, int dest, int m) {
+        // create a queue used to do BFS
+        Queue<Node> q = new ArrayDeque<>();
+
+        // push source vertex into the queue
+        q.add(new Node(src, 0));
+
+        // stores number of paths from source to destination
+        // having exactly m edges
+        int count = 0;
+
+        // loop till queue is empty
+        while (!q.isEmpty()) {
+            // pop front node from queue
+            Node node = q.poll();
+
+            int v = node.vertex;
+            int depth = node.depth;
+
+            // if destination is reached and BFS depth is equal to m
+            // update count
+            if (v == dest && depth == m)
+                count++;
+
+            // don't consider nodes having BFS depth more than m.
+            // This check will result in optimized code and also
+            // handle cycles in the graph (else loop will never break)
+            if (depth > m)
+                break;
+
+            // do for every adjacent vertex u of v
+            for (int u : g.adjList.get(v)) {
+                // push every vertex (discovered or undiscovered) into
+                // the queue
+                q.add(new Node(u, depth + 1));
+            }
+        }
+
+        // return number of paths from source to destination
+        return count;
+    }
+
+    // data structure to store graph edges
+    static class Edge {
+        int source, dest;
+
+        public Edge(int source, int dest) {
+            this.source = source;
+            this.dest = dest;
+        }
+
+        @Override
+        public String toString() {
+            return source + "->" + dest;
+        }
+    }
+
+    // BFS Node
+    static class Node {
+        // stores current vertex number and current depth of
+        // BFS (how far away current node is from the source?)
+        int vertex, depth;
+
+        public Node(int vertex, int depth) {
+            this.vertex = vertex;
+            this.depth = depth;
+        }
+    }
+
+    // class to represent a graph object
+    static class Graph {
+        // A List of Lists to represent an adjacency list
+        //        Map<Integer, List<Integer>> adjList = null;
+        List<List<Integer>> adjList = null;
+
+        // Constructor
+        Graph(List<Edge> edges, int N) {
+            //            adjList = new HashMap<>();
+            adjList = new ArrayList<>();
+            for (int i = 0; i < N; i++) {
+                adjList.add(new ArrayList<>());
+            }
+
+            // add edges to the directed graph
+            for (Edge edge : edges) {
+                int src = edge.source;
+                int dest = edge.dest;
+
+                //                adjList.computeIfAbsent(src, ArrayList::new).add(dest);
+                adjList.get(src).add(dest);
+            }
+        }
     }
 
     /**
-     * Function to count total number of possible solutions of a linear equation
-     * of k variables
-     * 
-     * @see https://www.techiedelight.com/total-possible-solutions-linear-equation-k-variables/
-     * 
-     * @param coeff
-     *            The coefficients of the variables of the equation.
-     * @param k
-     *            The index of the last coefficient to solve for.
-     * @param rhs
-     *            The constant value which the equation is equal to.
-     * @return The number of solutions to the equation with the given
-     *         parameters.
+     * What is the total number of distinct ways you can arrange the adapters to
+     * connect the charging outlet to your device?
      */
-    public static long count(int[] coeff, int k, int rhs) {
-        // if rhs becomes 0, solution is found
-        if (rhs == 0)
-            return 1;
+    private static void part2_slow() {
 
-        // return 0 if rhs becomes negative or no coefficient is left
-        if (rhs < 0 || k < 0)
-            return 0;
+        // List of graph edges.
+        List<Integer> joltages = FileUtils.readFileToStream(INPUT_TXT)
+                                          .map(Integer::valueOf)
+                                          .sorted()
+                                          .collect(Collectors.toList());
+        // Add implicit 0, and max+3
+        joltages.add(0, 0);
+        int maxJoltage = joltages.get(joltages.size() - 1) + 3;
+        joltages.add(maxJoltage);
 
-        // Case 1. include current coefficient coeff[k] in solution and
-        // recur with remaining value (rhs - coeff[k])
-        long include = count(coeff, k, rhs - coeff[k]);
+        //        System.out.println(joltages);
 
-        // Case 2. exclude current coefficient coeff[k] from solution and
-        // recur for remaining coefficients (k - 1)
-        long exclude = count(coeff, k - 1, rhs);
+        // Create a graph of the combinations
+        org.jgrapht.Graph<Integer, DefaultEdge> g = new SimpleDirectedGraph<>(DefaultEdge.class);
 
-        // return total ways by including or excluding current coefficient
-        return include + exclude;
+        // Add the vertices
+        joltages.forEach(g::addVertex);
+
+        // Add the edges
+        Integer[] joltagesArray = joltages.toArray(Integer[]::new);
+        for (int i = 0; i < joltagesArray.length; i++) {
+            for (int j = 1; j <= 3 && j + i < joltagesArray.length; j++) {
+                if (joltagesArray[i + j] - joltagesArray[i] <= 3) {
+                    g.addEdge(joltagesArray[i], joltagesArray[i + j]);
+                }
+            }
+        }
+
+        System.out.println(g);
+
+        List<GraphPath<Integer, DefaultEdge>> allPaths = new AllDirectedPaths<>(g).getAllPaths(0, maxJoltage, true, null);
+        //        System.out.println(allPaths);
+
+        System.out.println("There are " + allPaths.size() + " combinations.");
     }
 }
