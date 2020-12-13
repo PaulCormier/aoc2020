@@ -187,8 +187,8 @@ public class Day11 {
      */
     private static int checkNeighbours(int i, int j, char[][] grid, char statusToCheck) {
         int foundNeighbours = 0;
-        for (int x = -1; x <= 1; x++) {
-            for (int y = -1; y <= 1; y++) {
+        for (int x : new int[] { -1, 0, 1 }) {
+            for (int y : new int[] { -1, 0, 1 }) {
                 if (x == 0 && y == 0)
                     continue;
                 Optional<Character> seat = safeGridAccess(x + i, y + j, grid);
@@ -212,8 +212,8 @@ public class Day11 {
      */
     private static int checkNeighbours2(int i, int j, char[][] grid, char statusToCheck) {
         int foundNeighbours = 0;
-        for (int x = -1; x <= 1; x++) {
-            for (int y = -1; y <= 1; y++) {
+        for (int x : new int[] { -1, 0, 1 }) {
+            for (int y : new int[] { -1, 0, 1 }) {
                 if (x == 0 && y == 0)
                     continue;
 
