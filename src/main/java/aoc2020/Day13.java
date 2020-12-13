@@ -20,6 +20,7 @@ public class Day13 {
     public static void main(String[] args) {
         part1();
         part2();
+        part2_Avery();
     }
 
     /**
@@ -46,6 +47,7 @@ public class Day13 {
 
     /**
      * Find the time when the busses depart in a particular order.
+     * Final number: 836024966345345
      */
     private static void part2() {
         List<String> lines = FileUtils.readFile(INPUT_TXT);
@@ -57,6 +59,7 @@ public class Day13 {
 
         // Chinese remainder theorem?
         // https://www.freecodecamp.org/news/how-to-implement-the-chinese-remainder-theorem-in-java-db88a3f1ffe0/
+        // https://www.geeksforgeeks.org/chinese-remainder-theorem-set-2-implementation/
         int[] numbers = Stream.of(busRoutes)
                               .filter(StringUtils::isNumeric)
                               .mapToInt(Integer::parseInt)
@@ -65,8 +68,10 @@ public class Day13 {
         long[] remainders = new long[numbers.length];
         int j = 0;
         for (int i = 0; i < busRoutes.length; i++) {
-            if (StringUtils.isNumeric(busRoutes[i]))
-                remainders[j++] = (numbers[j - 1] - i) % numbers[j - 1];
+            if (StringUtils.isNumeric(busRoutes[i])) {
+                remainders[j] = numbers[j] - i % numbers[j];
+                j++;
+            }
         }
 
         System.out.println(Arrays.toString(numbers));
@@ -121,6 +126,75 @@ public class Day13 {
         if (y < 0)
             y += m;
         return y;
+    }
+
+    /**
+     * Find the time when the busses depart in a particular order.
+     */
+    private static void part2_Avery() {
+        /* @formatter:off
+         * From Python:
+         1   x="a"
+         2   list1=[23,x,x,x,x,x,x,x,x,x,x,x,x,41,x,x,x,37,x,x,x,x,x,421,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,17,x,19,x,x,x,x,x,x,x,x,x,29,x,487,x,x,x,x,x,x,x,x,x,x,x,x,13]
+         3   oAcum=0
+         4   m1Acum=1
+         5   for i in range(len(list1)):
+         6     if(list1[i] != x):
+         7       o2=i
+         8       m2=list1[i]
+         9       for i2 in range(m2):
+        10         if((m1Acum*i2+o2+oAcum)%m2==0):
+        11           oAcum=m1Acum*i2+oAcum
+        12           m1Acum=m1Acum*m2
+        13           break
+        14   print(oAcum)
+        
+        @formatter:on */
+
+        // A:1 This is used as an arbitrary non-numeric numeric value which replaces the
+        // "x" in the input.
+
+        // The second line is all the running bus numbers.
+        // A:2
+        String[] list1 = FileUtils.readFile(INPUT_TXT).get(1).split(",");
+
+        System.out.println(Arrays.toString(list1));
+
+        // A:3 Offset accumulator
+        long oAcum = 0;
+        // A:4 Modulus accumulator
+        long m1Acum = 1;
+
+        // A:5 Iterate through the array
+        for (int i = 0; i < list1.length; i++) {
+            // A:6 Python seems to return false when comparing a numeric value to a string
+            if (StringUtils.isNumeric(list1[i])) {
+                // A:7 Offset from target value (as in how far from the next multiple)
+                int o2 = i;
+                // A:8 Modulus value
+                int m2 = Integer.parseInt(list1[i]);
+
+                System.out.printf("oAcum: %d m1Acum: %d o2: %d m2: %d%n", oAcum, m1Acum, o2, m2);
+
+                // A:9 Try values up to m2
+                for (int i2 = 0; i2 < m2; i2++) {
+                    // A:10 For each multiple of m1Acum, check if it (plus the offset o2) is also a
+                    // multiple of m2
+                    if ((m1Acum * i2 + o2 + oAcum) % m2 == 0) {
+                        // A:11 The new offset increases by the multiple of m1Acum
+                        oAcum = m1Acum * i2 + oAcum;
+                        // A:12 The modulus accumulator increases by a factor of m2
+                        m1Acum = m1Acum * m2;
+                        // A:13 Found a solution for this modulus, continue
+                        break;
+                    }
+                }
+            }
+            // The offset accumulator now has the minimum value that is a multiple of all
+            // moduli at the expected offsets.
+        }
+        // A:14 The output accumulator is negative, for some reason.
+        System.out.println("Final number: " + oAcum);
     }
 
     /**
