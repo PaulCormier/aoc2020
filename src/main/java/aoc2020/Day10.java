@@ -2,6 +2,7 @@ package aoc2020;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -27,7 +28,7 @@ public class Day10 {
 
     public static void main(String[] args) {
         //        part1();
-        part2();
+        part2_Avery();
     }
 
     /**
@@ -50,6 +51,33 @@ public class Day10 {
         System.out.println("There are " + aggregateDifferences.get(1).size() + " 1s, and " +
                            (aggregateDifferences.get(3).size() + 1) + " 3s." +
                            " Their product is: " + (aggregateDifferences.get(1).size() * (aggregateDifferences.get(3).size() + 1)));
+    }
+    
+    private static void part2_Avery() {
+        // List of graph edges.
+        List<Integer> joltages = FileUtils.readFileToStream(INPUT_TXT)
+                                          .map(Integer::valueOf)
+                                          .sorted()
+                                          .collect(Collectors.toList());
+        int maxJoltage = joltages.get(joltages.size() - 1);
+
+        System.out.println(joltages);
+        
+        Map<Integer, Long> joltageCombinations = new HashMap<>();
+        // Start with 0
+        joltageCombinations.put(0, 1L);
+        
+        // Only need to sum the ways to get to the previous three (if they exist) joltages.
+        for (Integer joltage : joltages) {
+            long combinations = joltageCombinations.getOrDefault(joltage-1,0L);
+            combinations += joltageCombinations.getOrDefault(joltage-2,0L);
+            combinations += joltageCombinations.getOrDefault(joltage-3,0L);
+            joltageCombinations.put(joltage, combinations);
+        }
+        
+        System.out.println(joltageCombinations);
+
+        System.out.println("Maximum combinations is: " + joltageCombinations.get(maxJoltage));
     }
 
     /*
