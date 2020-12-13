@@ -108,20 +108,20 @@ public class Day11 {
         for (int i = 0; i < copyGrid.length; i++) {
             for (int j = 0; j < copyGrid[i].length; j++) {
                 switch (copyGrid[i][j]) {
-                case FLOOR:
-                    continue;
-                case OCCUPIED_SEAT:
-                    if (checkNeighbours(i, j, copyGrid, OCCUPIED_SEAT) >= 4) {
-                        grid[i][j] = EMPTY_SEAT;
-                        changed = true;
-                    }
-                    break;
-                case EMPTY_SEAT:
-                    if (checkNeighbours(i, j, copyGrid, OCCUPIED_SEAT) == 0) {
-                        grid[i][j] = OCCUPIED_SEAT;
-                        changed = true;
-                    }
-                    break;
+                    case FLOOR:
+                        continue;
+                    case OCCUPIED_SEAT:
+                        if (checkNeighbours(i, j, copyGrid, OCCUPIED_SEAT) >= 4) {
+                            grid[i][j] = EMPTY_SEAT;
+                            changed = true;
+                        }
+                        break;
+                    case EMPTY_SEAT:
+                        if (checkNeighbours(i, j, copyGrid, OCCUPIED_SEAT) == 0) {
+                            grid[i][j] = OCCUPIED_SEAT;
+                            changed = true;
+                        }
+                        break;
                 }
             }
         }
@@ -154,20 +154,20 @@ public class Day11 {
         for (int i = 0; i < copyGrid.length; i++) {
             for (int j = 0; j < copyGrid[i].length; j++) {
                 switch (copyGrid[i][j]) {
-                case FLOOR:
-                    continue;
-                case OCCUPIED_SEAT:
-                    if (checkNeighbours2(i, j, copyGrid, OCCUPIED_SEAT) >= 5) {
-                        grid[i][j] = EMPTY_SEAT;
-                        changed = true;
-                    }
-                    break;
-                case EMPTY_SEAT:
-                    if (checkNeighbours2(i, j, copyGrid, OCCUPIED_SEAT) == 0) {
-                        grid[i][j] = OCCUPIED_SEAT;
-                        changed = true;
-                    }
-                    break;
+                    case FLOOR:
+                        continue;
+                    case OCCUPIED_SEAT:
+                        if (checkNeighbours2(i, j, copyGrid, OCCUPIED_SEAT) >= 5) {
+                            grid[i][j] = EMPTY_SEAT;
+                            changed = true;
+                        }
+                        break;
+                    case EMPTY_SEAT:
+                        if (checkNeighbours2(i, j, copyGrid, OCCUPIED_SEAT) == 0) {
+                            grid[i][j] = OCCUPIED_SEAT;
+                            changed = true;
+                        }
+                        break;
                 }
             }
         }
@@ -191,8 +191,9 @@ public class Day11 {
             for (int y = -1; y <= 1; y++) {
                 if (x == 0 && y == 0)
                     continue;
-                if (x + i >= 0 && x + i < grid.length && y + j >= 0 && y + j < grid[x + i].length)
-                    foundNeighbours += grid[x + i][y + j] == statusToCheck ? 1 : 0;
+                Optional<Character> seat = safeGridAccess(x + i, y + j, grid);
+                if (seat.isPresent())
+                    foundNeighbours += seat.get() == statusToCheck ? 1 : 0;
             }
         }
         return foundNeighbours;
