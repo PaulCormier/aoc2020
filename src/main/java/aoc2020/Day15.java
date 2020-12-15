@@ -1,6 +1,8 @@
 package aoc2020;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * https://adventofcode.com/2020/day/15
@@ -61,9 +63,46 @@ public class Day15 {
     }
 
     /**
+     * What is the 30,000,000th number in the sequence?
      */
     private static void part2() {
+        int maxNumber = 30_000_000;
+        // int maxNumber = 2020;
 
+        // Run through all of the test cases
+        for (int[] startingNumbers : PUZZLE_INPUT) {
+            // int[] startingNumbers = TEST_INPUT[0];
+
+            // Obviously, can't just keep the whole collection.
+            // Only the previous instance of each number needs to be kept.
+            Map<Integer, Integer> spokenNumbers = new HashMap<>();
+
+            // Fill it with the starting numbers
+            for (int i = 0; i < startingNumbers.length; i++) {
+                spokenNumbers.put(startingNumbers[i], i + 1);
+            }
+
+            Integer previouslySpoken = null;
+            int lastSpoken = startingNumbers[startingNumbers.length - 1];
+
+            // Fill in the rest of the sequence
+            for (int turn = startingNumbers.length + 1; turn <= maxNumber; turn++) {
+                int nextSpoken;
+                if (previouslySpoken == null)
+                    nextSpoken = 0;
+                else
+                    nextSpoken = turn - 1 - previouslySpoken;
+
+                previouslySpoken = spokenNumbers.put(nextSpoken, turn);
+
+                lastSpoken = nextSpoken;
+            }
+
+            // System.out.println(spokenNumbers);
+            System.out.println("Given the starting numbers " + Arrays.toString(startingNumbers) +
+                               ", the " + maxNumber + "th number spoken is " + lastSpoken + ".");
+
+        }
     }
 
 }
