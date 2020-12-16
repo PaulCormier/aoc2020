@@ -2,7 +2,10 @@ package aoc2020;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.Range;
@@ -54,7 +57,7 @@ public class Day16 {
                                                  .filter(i -> rules.stream().noneMatch(r -> r.fieldIsValid(i)))
                                                  .collect(Collectors.summingInt(x -> x));
 
-        System.out.println("The ticket error scannig rate is: " + errorScanningRate);
+        System.out.println("The ticket error scanning rate is: " + errorScanningRate);
 
     }
 
@@ -62,12 +65,14 @@ public class Day16 {
      */
     private static void part2() {
         // Parse the rules
-        List<TicketRule> rules = FileUtils.readFileToStream(TEST2_INPUT_TXT)
+        List<TicketRule> rules = FileUtils.readFileToStream(INPUT_TXT)
                                           .map(TicketRule::new)
                                           .collect(Collectors.toList());
 
+        //        System.out.println(rules);
+
         // Check the nearby tickets, and only keep valid ones.
-        List<List<Integer>> nearbyTickets = FileUtils.readFileToStream(TEST2_INPUT_2_TXT)
+        List<List<Integer>> nearbyTickets = FileUtils.readFileToStream(INPUT_2_TXT)
                                                      .map(line -> Arrays.stream(line.split(","))
                                                                         .map(Integer::valueOf)
                                                                         .collect(Collectors.toList()))
@@ -76,12 +81,48 @@ public class Day16 {
                                                                                                  .anyMatch(rule -> rule.fieldIsValid(field))))
                                                      .collect(Collectors.toList());
 
-        System.out.println("The ticket error scannig rate is: ");
+        //        System.out.println(nearbyTickets);
+
+        // Determine the order of the fields
+        Map<TicketRule, Integer> fieldMappings = new HashMap<>();
+
+        // Try each column, see if there's a rule for which they're all valid.
+        int numberOfFields = rules.size();
+        for (int i = 0; i < numberOfFields; i++) {
+            final int column = i;
+            TicketRule matchedRule = null;
+            for (TicketRule rule : rules) {
+                if (nearbyTickets.stream().allMatch(t -> rule.fieldIsValid(t.get(column)))) {
+                    fieldMappings.put(rule, column);
+                    matchedRule = rule;
+                    break;
+                }
+            }
+            rules.remove(matchedRule);
+        }
+
+        System.out.println(rules);
+        
+        String ticket = fieldMappings.entrySet()
+                                     .stream()
+                                     .map(e -> String.format("%s:\t%3d%n", e.getKey().fieldName, YOUR_TICKET[e.getValue()]))
+                                     .collect(Collectors.joining());
+
+        System.out.println("The decoded ticket is:\n" + ticket);
+
+        long productOfDepartureFields = fieldMappings.entrySet()
+                                                     .stream()
+                                                     .filter(e -> e.getKey().fieldName.startsWith("departure"))
+                                                     .mapToLong(e -> YOUR_TICKET[e.getValue()])
+                                                     .reduce(Math::multiplyExact)
+                                                     .getAsLong();
+
+        System.out.println("The product of the departure fields is: " + productOfDepartureFields);
 
     }
 
     private static class TicketRule {
-        String field;
+        String fieldName;
         final Range<Integer> range1;
         final Range<Integer> range2;
 
@@ -92,7 +133,7 @@ public class Day16 {
          *            ex: class: 1-3 or 5-7
          */
         public TicketRule(String rule) {
-            this.field = rule.split(": ")[0];
+            this.fieldName = rule.split(": ")[0];
 
             String[] ranges = rule.split(": ")[1].split(" or ");
 
@@ -107,6 +148,11 @@ public class Day16 {
 
         public boolean fieldIsValid(int field) {
             return range1.contains(field) || range2.contains(field);
+        }
+
+        @Override
+        public String toString() {
+            return String.format("%s: %s or %s%n", this.fieldName, this.range1, this.range2);
         }
     }
 }
