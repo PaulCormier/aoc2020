@@ -51,20 +51,32 @@ public class Day17 {
                 Cube cube = new Cube(Coordinates.of(x - maxX, y - maxY, z), line[x] == ACTIVE_CUBE);
 
                 // Link the known neighbours above, and to the left
-                //                for (int i = 0; i >= -1; i--) {
-                //                    for (int j = 0; j >= -1; j--) {
-                //                        Optional.ofNullable(knownCubes.get(Coordinates.of(x - maxX + i, y - maxY + j, z)))
-                //                                .ifPresent(c -> c.addNeighbour(cube));
-                //                    }
-                //                }
+                for (int i = 1; i >= -1; i--) {
+                    Optional.ofNullable(knownCubes.get(Coordinates.of(x - maxX + i, y - maxY - 1, z)))
+                            .ifPresent(c -> c.addNeighbour(cube));
+                }
+                Optional.ofNullable(knownCubes.get(Coordinates.of(x - maxX - 1, y - maxY, z)))
+                        .ifPresent(c -> c.addNeighbour(cube));
                 knownCubes.put(cube.getCoordinates(), cube);
             }
             y++;
         }
 
         //        System.out.println(knownCubes);
-
+        System.out.println("Before any cycles:\n");
         printCubes(knownCubes, maxX, maxY, 0);
+
+        // Run through the cubes, and compute their next active states.
+        knownCubes.values().forEach(c -> {
+            int activeNeighbours = c.getActiveNeighbours();
+            c.setNextActive((c.isActive() && (activeNeighbours == 2 || activeNeighbours == 3)) ||
+                            (!c.isActive() && activeNeighbours == 3));
+        });
+        // Step them ahead
+        knownCubes.values().forEach(Cube::step);
+
+        System.out.println("After 1 cycle:\n");
+        printCubes(knownCubes, 1, 1, 1);
     }
 
     /**
@@ -113,6 +125,7 @@ public class Day17 {
      */
     private static class Cube {
         private boolean active = false;
+        private boolean nextActive = false;
         private final Coordinates coordinates;
         private final Set<Cube> neighbours;
 
@@ -126,8 +139,12 @@ public class Day17 {
             return active;
         }
 
-        public void setActive(boolean active) {
-            this.active = active;
+        public void setNextActive(boolean active) {
+            this.nextActive = active;
+        }
+
+        public void step() {
+            this.active = nextActive;
         }
 
         public Coordinates getCoordinates() {
