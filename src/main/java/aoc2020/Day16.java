@@ -1,11 +1,11 @@
 package aoc2020;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.Range;
@@ -18,7 +18,10 @@ import org.apache.commons.lang3.Range;
  */
 public class Day16 {
 
-    private static final int[] YOUR_TICKET = { 191, 89, 73, 139, 71, 103, 109, 53, 97, 179, 59, 67, 79, 101, 113, 157, 61, 107, 181, 137 };
+    private static final int[] YOUR_TICKET = { 191, 89, 73, 139, 71,
+                                               103, 109, 53, 97, 179,
+                                               59, 67, 79, 101, 113,
+                                               157, 61, 107, 181, 137 };
     private static final int[] TEST_TICKET = { 7, 1, 14 };
     private static final int[] TEST2_TICKET = { 11, 12, 13 };
 
@@ -62,6 +65,7 @@ public class Day16 {
     }
 
     /**
+     * Decode the ticket, and find the product of the departure fields.
      */
     private static void part2() {
         // Parse the rules
@@ -69,7 +73,7 @@ public class Day16 {
                                           .map(TicketRule::new)
                                           .collect(Collectors.toList());
 
-        //        System.out.println(rules);
+        // System.out.println(rules);
 
         // Check the nearby tickets, and only keep valid ones.
         List<List<Integer>> nearbyTickets = FileUtils.readFileToStream(INPUT_2_TXT)
@@ -81,12 +85,9 @@ public class Day16 {
                                                                                                  .anyMatch(rule -> rule.fieldIsValid(field))))
                                                      .collect(Collectors.toList());
 
-        //        System.out.println(nearbyTickets);
+        // System.out.println(nearbyTickets);
 
-        // Determine the order of the fields
-        Map<TicketRule, Integer> fieldMappings = new HashMap<>();
-
-        // Try each column, see if there's a rule for which they're all valid.
+        /*// Try each column, see if there's a rule for which they're all valid.
         int numberOfFields = rules.size();
         for (int i = 0; i < numberOfFields; i++) {
             final int column = i;
@@ -99,18 +100,44 @@ public class Day16 {
                 }
             }
             rules.remove(matchedRule);
-        }
+        }*/
 
-        System.out.println(rules);
-        
-        String ticket = fieldMappings.entrySet()
+        // Determine the order of the fields
+        Map<TicketRule, Integer> finalMappings = new HashMap<>();
+        int numberOfFields = rules.size();
+
+        while (!rules.isEmpty()) {
+            // Instead, try going through each rule, and finding the matching columns.
+            Map<TicketRule, List<Integer>> fieldMappings = new HashMap<>();
+            for (TicketRule rule : rules) {
+                for (int i = 0; i < numberOfFields; i++) {
+                    final int column = i;
+                    if (!finalMappings.values().contains(i)
+                            && nearbyTickets.stream().allMatch(t -> rule.fieldIsValid(t.get(column)))) {
+                        fieldMappings.computeIfAbsent(rule, k -> new ArrayList<>()).add(column);
+                    }
+                }
+            }
+            // Find the (hopefully) one (ones?) with only one mapping, put them aside, and
+            // remove them from the main list
+            fieldMappings.entrySet()
+                         .stream()
+                         .filter(e -> e.getValue().size() == 1)
+                         // .peek(System.out::println)
+                         .peek(e -> finalMappings.put(e.getKey(), e.getValue().get(0)))
+                         .forEach(e -> rules.remove(e.getKey()));
+        }
+        // System.out.println(finalMappings);
+
+        String ticket = finalMappings.entrySet()
                                      .stream()
-                                     .map(e -> String.format("%s:\t%3d%n", e.getKey().fieldName, YOUR_TICKET[e.getValue()]))
+                                     .map(e -> String.format("%s:\t%3d%n", e.getKey().fieldName,
+                                                             YOUR_TICKET[e.getValue()]))
                                      .collect(Collectors.joining());
 
         System.out.println("The decoded ticket is:\n" + ticket);
 
-        long productOfDepartureFields = fieldMappings.entrySet()
+        long productOfDepartureFields = finalMappings.entrySet()
                                                      .stream()
                                                      .filter(e -> e.getKey().fieldName.startsWith("departure"))
                                                      .mapToLong(e -> YOUR_TICKET[e.getValue()])
@@ -118,7 +145,7 @@ public class Day16 {
                                                      .getAsLong();
 
         System.out.println("The product of the departure fields is: " + productOfDepartureFields);
-
+        // 964373157673
     }
 
     private static class TicketRule {
@@ -130,7 +157,7 @@ public class Day16 {
          * Parse the given rule string into a TicketRule.
          * 
          * @param rule
-         *            ex: class: 1-3 or 5-7
+         *     ex: class: 1-3 or 5-7
          */
         public TicketRule(String rule) {
             this.fieldName = rule.split(": ")[0];
@@ -152,7 +179,7 @@ public class Day16 {
 
         @Override
         public String toString() {
-            return String.format("%s: %s or %s%n", this.fieldName, this.range1, this.range2);
+            return String.format("%s: %s or %s", this.fieldName, this.range1, this.range2);
         }
     }
 }
