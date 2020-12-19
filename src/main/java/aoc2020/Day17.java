@@ -5,7 +5,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -35,7 +34,7 @@ public class Day17 {
      */
     private static void part1() {
         // Initialise the Conway space
-        List<char[]> lines = FileUtils.readFileToStream(TEST_INPUT_TXT)
+        List<char[]> lines = FileUtils.readFileToStream(INPUT_TXT)
                                       .map(String::toCharArray)
                                       .collect(Collectors.toList());
 
@@ -44,6 +43,7 @@ public class Day17 {
 
         int maxY = (int) Math.ceil((lines.size() - 1) / 2.);
         int maxX = maxY;
+        int maxZ = 0;
         int y = 0;
         int z = 0;
         for (char[] line : lines) {
@@ -77,19 +77,43 @@ public class Day17 {
 
         // System.out.println(knownCubes);
         System.out.println("Before any cycles:\n");
-        printCubes(knownCubes, maxX, maxY, 0);
+        printCubes(knownCubes, maxX, maxY, maxZ);
 
-        // Run through the cubes, and compute their next active states.
-        knownCubes.values().forEach(c -> {
-            int activeNeighbours = c.getActiveNeighbours();
-            c.setNextActive((c.isActive() && (activeNeighbours == 2 || activeNeighbours == 3)) ||
-                            (!c.isActive() && activeNeighbours == 3));
-        });
-        // Step them ahead
-        knownCubes.values().forEach(Cube::step);
+        for (int cycle = 1; cycle <= 6; cycle++) {
+            // Run through the cubes, and compute their next active states.
+            knownCubes.values().forEach(c -> {
+                int activeNeighbours = c.getActiveNeighbours();
+                c.setNextActive((c.isActive() && (activeNeighbours == 2 || activeNeighbours == 3)) ||
+                                (!c.isActive() && activeNeighbours == 3));
+            });
+            // Step them ahead
+            knownCubes.values().forEach(Cube::step);
 
-        System.out.println("After 1 cycle:\n");
-        printCubes(knownCubes, 3, 3, 1);
+            // Link the new neighbours
+            for (Cube cube : new ArrayList<>(knownCubes.values())) {
+                for (z = -1; z <= 1; z++) {
+                    for (y = -1; y <= 1; y++) {
+                        for (int x = -1; x <= 1; x++) {
+                            Coordinates baseCoordinates = cube.getCoordinates();
+                            if (x == 0 && y == 0 && z == 0)
+                                continue;
+                            Coordinates targetCoordinates = Coordinates.of(baseCoordinates.x + x,
+                                                                           baseCoordinates.y + y,
+                                                                           baseCoordinates.z + z);
+
+                            Cube targetCube = knownCubes.computeIfAbsent(targetCoordinates, c -> new Cube(c, false));
+                            targetCube.addNeighbour(cube);
+                        }
+                    }
+                }
+            }
+
+            // System.out.println("After " + cycle + " cycle(s):\n");
+            // printCubes(knownCubes, ++maxX, ++maxY, ++maxZ);
+        }
+
+        long activeCubes = knownCubes.values().stream().filter(Cube::isActive).count();
+        System.out.println("There are " + activeCubes + " active cubes.");
     }
 
     /**
