@@ -1,5 +1,6 @@
 package aoc2020;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,14 +53,39 @@ public class Day17 {
 
                 // Link the known neighbours above, and to the left
                 for (int i = 1; i >= -1; i--) {
-                    Optional.ofNullable(knownCubes.get(Coordinates.of(x - maxX + i, y - maxY - 1, z)))
-                            .ifPresent(c -> c.addNeighbour(cube));
+                    Coordinates targetCube = Coordinates.of(x - maxX + i, y - maxY - 1, z);
+                    Optional.ofNullable(knownCubes.get(targetCube))
+                            .ifPresentOrElse(c -> c.addNeighbour(cube),
+                                             () -> {
+                                                 Cube newCube = new Cube(targetCube, false);
+                                                 newCube.addNeighbour(cube);
+                                                 knownCubes.put(newCube.getCoordinates(), newCube);
+                                             });
                 }
                 Optional.ofNullable(knownCubes.get(Coordinates.of(x - maxX - 1, y - maxY, z)))
                         .ifPresent(c -> c.addNeighbour(cube));
                 knownCubes.put(cube.getCoordinates(), cube);
             }
             y++;
+        }
+
+        // Add the z-layer neighbours
+        for (Cube cube : new ArrayList<>(knownCubes.values())) {
+            for (z = -1; z <= 1; z += 2) {
+                for (y = -1; y <= 1; y++) {
+                    for (int x = -1; x <= 1; x++) {
+                        Coordinates baseCoordinates = cube.getCoordinates();
+                        Coordinates targetCube = Coordinates.of(baseCoordinates.x + x, baseCoordinates.y + y, baseCoordinates.z + z);
+                        Optional.ofNullable(knownCubes.get(targetCube))
+                                .ifPresentOrElse(c -> c.addNeighbour(cube),
+                                                 () -> {
+                                                     Cube newCube = new Cube(targetCube, false);
+                                                     newCube.addNeighbour(cube);
+                                                     knownCubes.put(newCube.getCoordinates(), newCube);
+                                                 });
+                    }
+                }
+            }
         }
 
         //        System.out.println(knownCubes);
@@ -76,7 +102,7 @@ public class Day17 {
         knownCubes.values().forEach(Cube::step);
 
         System.out.println("After 1 cycle:\n");
-        printCubes(knownCubes, 1, 1, 1);
+        printCubes(knownCubes, 3, 3, 1);
     }
 
     /**
@@ -103,10 +129,12 @@ public class Day17 {
 
         for (Cube cube : cubes.values()) {
             Coordinates coordinates = cube.getCoordinates();
-            int x = coordinates.x + maxX;
-            int y = coordinates.y + maxY;
-            int z = coordinates.z + maxZ;
-            grid[z][y][x] = cube.isActive() ? ACTIVE_CUBE : INACTIVE_CUBE;
+            if (Math.abs(coordinates.x) <= maxX && Math.abs(coordinates.y) <= maxY && Math.abs(coordinates.z) <= maxZ) {
+                int x = coordinates.x + maxX;
+                int y = coordinates.y + maxY;
+                int z = coordinates.z + maxZ;
+                grid[z][y][x] = cube.isActive() ? ACTIVE_CUBE : INACTIVE_CUBE;
+            }
         }
 
         // Print the grid
