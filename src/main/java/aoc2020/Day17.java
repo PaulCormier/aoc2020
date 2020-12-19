@@ -48,47 +48,34 @@ public class Day17 {
         int z = 0;
         for (char[] line : lines) {
             maxX = (int) Math.ceil((line.length - 1) / 2.);
-            for (int x = 0; x < line.length; x++) {
-                Cube cube = new Cube(Coordinates.of(x - maxX, y - maxY, z), line[x] == ACTIVE_CUBE);
-
-                // Link the known neighbours above, and to the left
-                for (int i = 1; i >= -1; i--) {
-                    Coordinates targetCube = Coordinates.of(x - maxX + i, y - maxY - 1, z);
-                    Optional.ofNullable(knownCubes.get(targetCube))
-                            .ifPresentOrElse(c -> c.addNeighbour(cube),
-                                             () -> {
-                                                 Cube newCube = new Cube(targetCube, false);
-                                                 newCube.addNeighbour(cube);
-                                                 knownCubes.put(newCube.getCoordinates(), newCube);
-                                             });
-                }
-                Optional.ofNullable(knownCubes.get(Coordinates.of(x - maxX - 1, y - maxY, z)))
-                        .ifPresent(c -> c.addNeighbour(cube));
-                knownCubes.put(cube.getCoordinates(), cube);
+            for (int i = 0; i < line.length; i++) {
+                int x = i;
+                knownCubes.computeIfAbsent(Coordinates.of(x - maxX, y - maxY, z),
+                                           c -> new Cube(c, line[x] == ACTIVE_CUBE));
             }
             y++;
         }
 
-        // Add the z-layer neighbours
+        // Link the known neighbours
         for (Cube cube : new ArrayList<>(knownCubes.values())) {
-            for (z = -1; z <= 1; z += 2) {
+            for (z = -1; z <= 1; z++) {
                 for (y = -1; y <= 1; y++) {
                     for (int x = -1; x <= 1; x++) {
                         Coordinates baseCoordinates = cube.getCoordinates();
-                        Coordinates targetCube = Coordinates.of(baseCoordinates.x + x, baseCoordinates.y + y, baseCoordinates.z + z);
-                        Optional.ofNullable(knownCubes.get(targetCube))
-                                .ifPresentOrElse(c -> c.addNeighbour(cube),
-                                                 () -> {
-                                                     Cube newCube = new Cube(targetCube, false);
-                                                     newCube.addNeighbour(cube);
-                                                     knownCubes.put(newCube.getCoordinates(), newCube);
-                                                 });
+                        if (x == 0 && y == 0 && z == 0)
+                            continue;
+                        Coordinates targetCoordinates = Coordinates.of(baseCoordinates.x + x,
+                                                                       baseCoordinates.y + y,
+                                                                       baseCoordinates.z + z);
+
+                        Cube targetCube = knownCubes.computeIfAbsent(targetCoordinates, c -> new Cube(c, false));
+                        targetCube.addNeighbour(cube);
                     }
                 }
             }
         }
 
-        //        System.out.println(knownCubes);
+        // System.out.println(knownCubes);
         System.out.println("Before any cycles:\n");
         printCubes(knownCubes, maxX, maxY, 0);
 
@@ -115,14 +102,14 @@ public class Day17 {
      * by +/- maxY by +/- maxZ.
      * 
      * @param cubes
-     *            The map of cubes to be printed.
+     *     The map of cubes to be printed.
      * @param maxX
-     *            The number of cubes wide to be printed away from the centre.
+     *     The number of cubes wide to be printed away from the centre.
      * @param maxY
-     *            The number of cubes high to be printed away from the centre.
+     *     The number of cubes high to be printed away from the centre.
      * @param maxZ
-     *            The number of layers of cubes to be printed away from the
-     *            centre.
+     *     The number of layers of cubes to be printed away from the
+     *     centre.
      */
     private static void printCubes(Map<Coordinates, Cube> cubes, int maxX, int maxY, int maxZ) {
         char[][][] grid = new char[maxZ * 2 + 1][maxY * 2 + 1][maxX * 2 + 1];
@@ -187,7 +174,7 @@ public class Day17 {
          * Link two cubes as neighbours.
          * 
          * @param neighbour
-         *            The neighbour to associate with this cube.
+         *     The neighbour to associate with this cube.
          */
         public void addNeighbour(Cube neighbour) {
             this.neighbours.add(neighbour);
