@@ -17,7 +17,7 @@ public class Day18 {
     private static final String TEST_INPUT_2_TXT = "TestInput2-Day18.txt";
 
     public static void main(String[] args) {
-        // part1();
+        part1();
         part2();
     }
 
@@ -25,7 +25,6 @@ public class Day18 {
      * What is the sum of the resulting values?
      */
     private static void part1() {
-
         // Get the questions
         // Parse the questions
         // Find the sum of the solutions
@@ -42,10 +41,15 @@ public class Day18 {
      */
     private static void part2() {
 
+        // FileUtils.readFileToStream(TEST_INPUT_TXT)
+        // .peek(System.out::println)
+        // .map(Day18::addParentheses)
+        // .forEach(System.out::println);
+
         // Get the questions
         // Parse the questions
         // Find the sum of the solutions
-        long sum = FileUtils.readFileToStream(TEST_INPUT_TXT)
+        long sum = FileUtils.readFileToStream(INPUT_TXT)
                             .peek(System.out::println)
                             // .peek(q -> System.out.print(q + " = "))
                             .map(Day18::addParentheses)
@@ -63,8 +67,9 @@ public class Day18 {
     private static String addParentheses(String line) {
         StringBuilder output = new StringBuilder();
 
-        int parensAdded = 0;
-        String value = null;
+        String lhs = null;
+        String rhs = null;
+        char operation = ' ';
 
         char[] characters = line.toCharArray();
         for (int i = 0; i < characters.length; i++) {
@@ -80,49 +85,39 @@ public class Day18 {
                             break;
                     }
                 }
-                output.append("(")
-                      .append(addParentheses(new String(characters, i + 1, j - i - 1)))
-                      .append(")");
-                if (parensAdded > 0) {
-                    output.append(')');
-                    parensAdded--;
-                }
-                value = null;
+
+                if (lhs == null)
+                    lhs = "(" + addParentheses(new String(characters, i + 1, j - i - 1)) + ")";
+                else
+                    rhs = "(" + addParentheses(new String(characters, i + 1, j - i - 1)) + ")";
                 i = j;
             }
 
             // Number
             if (NumberUtils.isCreatable(String.valueOf(characters[i]))) {
-                value = String.valueOf(characters[i]);
+                if (lhs == null)
+                    lhs = String.valueOf(characters[i]);
+                else
+                    rhs = String.valueOf(characters[i]);
             }
 
             // Operator
-            if (characters[i] == '*') {
-                if (value != null)
-                    output.append(value);
-                if (parensAdded > 0) {
-                    output.append(')');
-                    parensAdded--;
-                }
-                output.append('*');
+            if (characters[i] == '*' || characters[i] == '+') {
+                operation = characters[i];
             }
-            if (characters[i] == '+') {
-                
-                if (value != null) {
-                        output.append('(').append(value);
-                    parensAdded++;
-                }
-                output.append('+');
-            }
-        }
-        if (value != null) {
-            output.append(value);
-        }
-        if (parensAdded > 0) {
-            output.append(')');
-            parensAdded--;
-        }
 
+            if (lhs != null && rhs != null) {
+                if (operation == '+') {
+                    lhs = "(" + lhs + operation + rhs + ")";
+                } else {
+                    output.append(lhs).append(operation);
+                    lhs = rhs;
+                }
+
+                rhs = null;
+            }
+        }
+        output.append(lhs);
         return output.toString();
     }
 
