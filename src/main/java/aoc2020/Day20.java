@@ -1,12 +1,14 @@
 package aoc2020;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -22,9 +24,31 @@ public class Day20 {
     private static final String PUZZLE_INPUT_TXT = "Input-Day20.txt";
     private static final String TEST_PUZZLE_INPUT_TXT = "TestInput-Day20.txt";
 
+    private static final String TEST_TILE = "Tile 1951:\n" +
+                                            "#.##...##.\n" +
+                                            "#.####...#\n" +
+                                            ".....#..##\n" +
+                                            "#...######\n" +
+                                            ".##.#....#\n" +
+                                            ".###.#####\n" +
+                                            "###.##.##.\n" +
+                                            ".###....#.\n" +
+                                            "..#.#..#.#\n" +
+                                            "#...##.#..";
+
     public static void main(String[] args) {
-        part1();
-        part2();
+        //        part1();
+                part2();
+//        Tile testTile = new Tile(TEST_TILE);
+//        //        for (int i = 1; i <= 4; i++) {
+//        //            System.out.println(testTile);
+//        //            testTile.rotate(1);
+//        //        }
+//        testTile.flip();
+//        for (int i = 1; i <= 4; i++) {
+//            System.out.println(testTile);
+//            testTile.rotate(1);
+//        }
     }
 
     /**
@@ -57,15 +81,85 @@ public class Day20 {
     }
 
     /**
+     * How many # are not part of a sea monster?
      */
     private static void part2() {
+        Map<Integer, List<Tile>> sideMap = new HashMap<>();
+
+        // Parse the input
+        List<Tile> tiles = FileUtils.cleanInput(FileUtils.readFileToStream(TEST_PUZZLE_INPUT_TXT))
+                                    .map(Tile::new)
+                                    //                                    .peek(System.out::println)
+                                    .peek(t -> {
+                                        t.sides.forEach(s -> sideMap.computeIfAbsent(s, ArrayList::new).add(t));
+                                        t.sidesFlipped.forEach(s -> sideMap.computeIfAbsent(s, ArrayList::new).add(t));
+                                    })
+                                    .collect(Collectors.toList());
+
+        // Reassemble the image
+        int size = (int) Math.sqrt(tiles.size());
+        Tile[][] arrangement = new Tile[size][size];
+
+        // Pick a top-left corner
+        Tile corner = tiles.stream()
+                           .filter(t -> t.getSides().stream().filter(s -> sideMap.get(s).size() == 1).count() == 2)
+                           .findAny()
+                           .get();
+        arrangement[0][0] = corner;
+
+        corner.flip();
+        //        System.out.println("Top-left corner: \n" + corner);
+
+        // Orient it correctly
+        // Which sides are missing?
+        List<Boolean> matchingSides = corner.getSides()
+                                            .stream()
+                                            .map(s -> sideMap.get(s).size() == 1)
+                                            .peek(System.out::println)
+                                            .collect(Collectors.toList());
+
+        boolean first = matchingSides.get(0);
+        boolean second = matchingSides.get(1);
+        int rotate = 0;
+        if (!first && second)
+            rotate = 2;
+        if (first && second)
+            rotate = 3;
+        if (first && !second)
+            rotate = 1;
+        if (!first && !second)
+            rotate = 0;
+
+        corner.rotate(rotate);
+        System.out.println("Top-left corner: \n" + corner);
+
+        // Fill in the first row
+        for (int i = 1; i < size; i++) {
+            // Find the tile which goes to the right
+            Tile leftTile = arrangement[0][i - 1];
+            Integer matchingSide = leftTile.getSides().get(1);
+            Tile rightTile = sideMap.get(matchingSide).stream().filter(t -> t != leftTile).findAny().get();
+            arrangement[0][i] = rightTile;
+            // Orient it correctly
+            if (rightTile.sidesFlipped.contains(matchingSide))
+                rightTile.flip();
+            rightTile.rotate(3 - rightTile.getSides().indexOf(matchingSide));
+        }
+
+        
+        
+        System.out.println(ArrayUtils.toString(arrangement[0]));
+
+        // Look for sea monsters
+
+        // Count remaining '#'s
     }
 
     private static class Tile {
-        private final List<Integer> sides;
-        private final List<Integer> sidesFlipped;
+        private List<Integer> sides;
+        private List<Integer> sidesFlipped;
 
-        private final String data;
+        private String data;
         private final int id;
 
         /**
@@ -79,34 +173,45 @@ public class Day20 {
          *            The string representing the tile.
          */
         public Tile(String content) {
+            // Get the id, then discard the header
             this.id = Integer.parseInt(content.substring(5, 9));
-            this.data = content.substring(11).replace(' ', '\n');
+            content = content.substring(11).replace(' ', '\n');
 
             // Compute the numerical codes for the sides.
             sides = new ArrayList<>();
             sidesFlipped = new ArrayList<>();
 
             // Go around clockwise
-            String top = this.data.substring(0, 10);
-            sides.add(parseSide(top));
-            sidesFlipped.add(parseSide(StringUtils.reverse(top)));
+            String top = content.substring(0, 10);
 
-            String bottom = this.data.substring(99, 109);
-            sides.add(parseSide(StringUtils.reverse(bottom)));
-            sidesFlipped.add(parseSide(bottom));
-
-            String right = Stream.of(this.data.split("\n"))
+            String right = Stream.of(content.split("\n"))
                                  .map(l -> l.substring(9))
                                  .collect(Collectors.joining());
-            sides.add(parseSide(right));
-            sidesFlipped.add(parseSide(StringUtils.reverse(right)));
 
-            String left = Stream.of(this.data.split("\n"))
+            String bottom = content.substring(99, 109);
+            String left = Stream.of(content.split("\n"))
                                 .map(l -> l.substring(0, 1))
                                 .collect(Collectors.joining());
-            sides.add(parseSide(StringUtils.reverse(left)));
-            sidesFlipped.add(parseSide(left));
 
+            sides.add(parseSide(top));
+            sides.add(parseSide(right));
+            sides.add(parseSide(StringUtils.reverse(bottom)));
+            sides.add(parseSide(StringUtils.reverse(left)));
+            sidesFlipped.add(parseSide(StringUtils.reverse(top)));
+            sidesFlipped.add(parseSide(left));
+            sidesFlipped.add(parseSide(bottom));
+            sidesFlipped.add(parseSide(StringUtils.reverse(right)));
+
+            // The sides are not part of the data.
+            this.data = content.substring(11, 99).replaceAll(".(.{8}).\n", "$1\n");
+        }
+
+        public int getId() {
+            return id;
+        }
+
+        public String getData() {
+            return data;
         }
 
         public List<Integer> getSides() {
@@ -117,12 +222,58 @@ public class Day20 {
             return sidesFlipped;
         }
 
-        public String getData() {
-            return data;
+        /**
+         * Rotate the data, and sides, clockwise a number of times.
+         * 
+         * @param times
+         *            The number of times to rotate the tile.
+         */
+        public void rotate(int times) {
+            Collections.rotate(sides, times);
+            Collections.rotate(sidesFlipped, -times);
+
+            if (times % 4 == 2) {
+                data = Stream.of(data.split("\n"))
+                             .map(l -> StringUtils.reverse(l))
+                             .sorted((a, b) -> -1)
+                             .collect(Collectors.joining("\n"));
+            } else if (times % 2 == 1) {
+                char[][] matrix = Stream.of(data.split("\n"))
+                                        .map(String::toCharArray)
+                                        .collect(Collectors.toList())
+                                        .toArray(new char[0][0]);
+                int size = matrix.length;
+                char[][] ret = new char[size][size];
+
+                // Rotate the matrix 1, or 3 times.
+                for (int time = 0; time < times % 4; time++) {
+                    for (int i = 0; i < size; ++i)
+                        for (int j = 0; j < size; ++j)
+                            ret[i][j] = matrix[size - j - 1][i];
+                    matrix = ret;
+                }
+
+                data = Stream.of(matrix)
+                             .map(String::new)
+                             .collect(Collectors.joining("\n"));
+            }
         }
 
-        public int getId() {
-            return id;
+        /**
+         * Invert the tile.
+         */
+        public void flip() {
+            List<Integer> temp = sides;
+            sides = sidesFlipped;
+            sidesFlipped = temp;
+
+            //            Collections.swap(sides, 1, 3);
+            //            Collections.swap(sidesFlipped, 1, 3);
+
+            // Reverse each line
+            data = Stream.of(data.split("\n"))
+                         .map(l -> StringUtils.reverse(l))
+                         .collect(Collectors.joining("\n"));
         }
 
         /**
