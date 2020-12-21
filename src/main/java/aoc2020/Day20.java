@@ -38,17 +38,17 @@ public class Day20 {
 
     public static void main(String[] args) {
         //        part1();
-                part2();
-//        Tile testTile = new Tile(TEST_TILE);
-//        //        for (int i = 1; i <= 4; i++) {
-//        //            System.out.println(testTile);
-//        //            testTile.rotate(1);
-//        //        }
-//        testTile.flip();
-//        for (int i = 1; i <= 4; i++) {
-//            System.out.println(testTile);
-//            testTile.rotate(1);
-//        }
+        part2();
+        //        Tile testTile = new Tile(TEST_TILE);
+        //        for (int i = 1; i <= 4; i++) {
+        //            System.out.println(testTile);
+        //            testTile.rotate(1);
+        //        }
+        //        testTile.flip();
+        //        for (int i = 1; i <= 4; i++) {
+        //            System.out.println(testTile);
+        //            testTile.rotate(1);
+        //        }
     }
 
     /**
@@ -107,15 +107,15 @@ public class Day20 {
                            .get();
         arrangement[0][0] = corner;
 
-        corner.flip();
-        //        System.out.println("Top-left corner: \n" + corner);
+        corner.flipVertical();
+        System.out.println("Top-left corner: \n" + corner);
 
         // Orient it correctly
         // Which sides are missing?
         List<Boolean> matchingSides = corner.getSides()
                                             .stream()
                                             .map(s -> sideMap.get(s).size() == 1)
-                                            .peek(System.out::println)
+                                            //                                            .peek(System.out::println)
                                             .collect(Collectors.toList());
 
         boolean first = matchingSides.get(0);
@@ -123,32 +123,58 @@ public class Day20 {
         int rotate = 0;
         if (!first && second)
             rotate = 2;
-        if (first && second)
+        else if (first && second)
             rotate = 3;
-        if (first && !second)
+        else if (first && !second)
             rotate = 1;
-        if (!first && !second)
+        else if (!first && !second)
             rotate = 0;
 
         corner.rotate(rotate);
-        System.out.println("Top-left corner: \n" + corner);
+        //        System.out.println("Top-left corner: \n" + corner);
+        int row = 0;
+        do {
+            // Fill in the first row
+            for (int i = 1; i < size; i++) {
+                // Find the tile which goes to the right
+                Tile leftTile = arrangement[row][i - 1];
+                Integer matchingSide = leftTile.getSides().get(1);
+                Tile rightTile = sideMap.get(matchingSide).stream().filter(t -> t != leftTile).findAny().get();
+                arrangement[row][i] = rightTile;
+                // Orient it correctly
+                // Get the matching side on the flip side
+                if (rightTile.getSides().contains(matchingSide)) {
+                    rightTile.flipVertical();
+                }
+                rightTile.rotate(3 + rightTile.getSidesFlipped().indexOf(matchingSide));
+            }
 
-        // Fill in the first row
-        for (int i = 1; i < size; i++) {
-            // Find the tile which goes to the right
-            Tile leftTile = arrangement[0][i - 1];
-            Integer matchingSide = leftTile.getSides().get(1);
-            Tile rightTile = sideMap.get(matchingSide).stream().filter(t -> t != leftTile).findAny().get();
-            arrangement[0][i] = rightTile;
-            // Orient it correctly
-            if (rightTile.sidesFlipped.contains(matchingSide))
-                rightTile.flip();
-            rightTile.rotate(3 - rightTile.getSides().indexOf(matchingSide));
+            //        System.out.println(ArrayUtils.toString(arrangement[0]));
+
+            // Get the next left side piece
+            Tile lastLeftSide = arrangement[row][0];
+            Integer topSide = lastLeftSide.getSides().get(2);
+            Tile nextLeftSide = sideMap.get(topSide).stream().filter(t -> t != lastLeftSide).findAny().orElse(null);
+            if (nextLeftSide != null) {
+                // Orient it so that the topSide is on top, and the unmatched side is on the left
+                if (nextLeftSide.getSides().contains(topSide)) {
+                    nextLeftSide.flipVertical();
+                }
+                nextLeftSide.rotate(nextLeftSide.getSidesFlipped().indexOf(topSide));
+                arrangement[row + 1][0] = nextLeftSide;
+            }
+        } while (++row < size);
+
+        // Assemble the map
+        String[] mapRows = new String[size * 8];
+
+        for (int i = 0; i < size * 8; i++) {
+            for (int j = 0; j < size; j++)
+                mapRows[i] = StringUtils.defaultString(mapRows[i]) + new String(arrangement[i / 8][j].getData()[i % 8]);
         }
 
-        
-        
-        System.out.println(ArrayUtils.toString(arrangement[0]));
+        String map = Stream.of(mapRows).collect(Collectors.joining("\n"));
+        System.out.println(map);
 
         // Look for sea monsters
 
@@ -159,7 +185,7 @@ public class Day20 {
         private List<Integer> sides;
         private List<Integer> sidesFlipped;
 
-        private String data;
+        private char[][] data;
         private final int id;
 
         /**
@@ -203,14 +229,17 @@ public class Day20 {
             sidesFlipped.add(parseSide(StringUtils.reverse(right)));
 
             // The sides are not part of the data.
-            this.data = content.substring(11, 99).replaceAll(".(.{8}).\n", "$1\n");
+            this.data = Stream.of(content.substring(11, 99).replaceAll(".(.{8}).\n", "$1\n").split("\n"))
+                              .map(String::toCharArray)
+                              .collect(Collectors.toList())
+                              .toArray(new char[0][0]);
         }
 
         public int getId() {
             return id;
         }
 
-        public String getData() {
+        public char[][] getData() {
             return data;
         }
 
@@ -233,47 +262,34 @@ public class Day20 {
             Collections.rotate(sidesFlipped, -times);
 
             if (times % 4 == 2) {
-                data = Stream.of(data.split("\n"))
-                             .map(l -> StringUtils.reverse(l))
-                             .sorted((a, b) -> -1)
-                             .collect(Collectors.joining("\n"));
+                Stream.of(data).forEach(ArrayUtils::reverse);
+                ArrayUtils.reverse(data);
             } else if (times % 2 == 1) {
-                char[][] matrix = Stream.of(data.split("\n"))
-                                        .map(String::toCharArray)
-                                        .collect(Collectors.toList())
-                                        .toArray(new char[0][0]);
-                int size = matrix.length;
+                int size = data.length;
                 char[][] ret = new char[size][size];
 
                 // Rotate the matrix 1, or 3 times.
                 for (int time = 0; time < times % 4; time++) {
                     for (int i = 0; i < size; ++i)
                         for (int j = 0; j < size; ++j)
-                            ret[i][j] = matrix[size - j - 1][i];
-                    matrix = ret;
+                            ret[i][j] = data[size - j - 1][i];
+                    data = ret;
                 }
-
-                data = Stream.of(matrix)
-                             .map(String::new)
-                             .collect(Collectors.joining("\n"));
             }
         }
 
         /**
-         * Invert the tile.
+         * Invert the tile along a vertical axis.
          */
-        public void flip() {
+        public void flipVertical() {
             List<Integer> temp = sides;
             sides = sidesFlipped;
             sidesFlipped = temp;
 
-            //            Collections.swap(sides, 1, 3);
-            //            Collections.swap(sidesFlipped, 1, 3);
-
             // Reverse each line
-            data = Stream.of(data.split("\n"))
-                         .map(l -> StringUtils.reverse(l))
-                         .collect(Collectors.joining("\n"));
+            for (char[] row : data) {
+                ArrayUtils.reverse(row);
+            }
         }
 
         /**
@@ -289,7 +305,8 @@ public class Day20 {
 
         @Override
         public String toString() {
-            return "Tile " + this.id + ":\n" + data + "\n" + sides + "\n" + sidesFlipped + "\n";
+            String dataString = Stream.of(data).map(String::new).collect(Collectors.joining("\n"));
+            return "Tile " + this.id + ":\n" + dataString + "\n" + sides + "\n" + sidesFlipped + "\n";
         }
     }
 }
