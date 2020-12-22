@@ -5,6 +5,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -87,7 +89,7 @@ public class Day20 {
         Map<Integer, List<Tile>> sideMap = new HashMap<>();
 
         // Parse the input
-        List<Tile> tiles = FileUtils.cleanInput(FileUtils.readFileToStream(TEST_PUZZLE_INPUT_TXT))
+        List<Tile> tiles = FileUtils.cleanInput(FileUtils.readFileToStream(PUZZLE_INPUT_TXT))
                                     .map(Tile::new)
                                     //                                    .peek(System.out::println)
                                     .peek(t -> {
@@ -95,6 +97,8 @@ public class Day20 {
                                         t.sidesFlipped.forEach(s -> sideMap.computeIfAbsent(s, ArrayList::new).add(t));
                                     })
                                     .collect(Collectors.toList());
+
+        //        System.out.println(tiles.size());
 
         // Reassemble the image
         int size = (int) Math.sqrt(tiles.size());
@@ -107,8 +111,8 @@ public class Day20 {
                            .get();
         arrangement[0][0] = corner;
 
-        corner.flipVertical();
-        System.out.println("Top-left corner: \n" + corner);
+        //        corner.flipVertical();
+        //        System.out.println("Top-left corner: \n" + corner);
 
         // Orient it correctly
         // Which sides are missing?
@@ -173,12 +177,86 @@ public class Day20 {
                 mapRows[i] = StringUtils.defaultString(mapRows[i]) + new String(arrangement[i / 8][j].getData()[i % 8]);
         }
 
+        // Look for sea monsters
+        int foundSeaMonsters = 0;
+        Pattern body1 = Pattern.compile("#(....)##(....)##(....)###");
+        Pattern body2 = Pattern.compile("(.)#(..)#(..)#(..)#(..)#(..)#");
+        String bodyReplace1 = "O$1OO$2OO$3OOO";
+        String bodyReplace2 = "$1O$2O$3O$4O$5O$6O";
+
+//        long startingHashes = Stream.of(mapRows).collect(Collectors.joining("\n")).chars().filter(c -> c == '#').count();
+//
+//        System.out.println("There are " + startingHashes + " \"#\"s to start with.");
+        
+//        ArrayUtils.reverse(mapRows);
+//        mapRows = rotate(mapRows);
+//        mapRows = rotate(mapRows);
+//        mapRows = rotate(mapRows);
+        search: for (int x = 0; x < 2; x++) {
+            for (int y = 0; y < 4; y++) {
+                for (int i = 1; i < mapRows.length - 1; i++) {
+                    // Look for the rows of the body
+                    Matcher row1Matcher = body1.matcher(mapRows[i]);
+                    Matcher row2Matcher = body2.matcher(mapRows[i + 1]);
+                    while (row1Matcher.find()) {
+                        while (row2Matcher.find()) {
+                            if (row1Matcher.start() == row2Matcher.start() &&
+                                mapRows[i - 1].charAt(row1Matcher.start() + 18) == '#') {
+                                foundSeaMonsters++;
+                                mapRows[i - 1] = mapRows[i - 1].substring(0, row1Matcher.start() + 18) + "O" +
+                                                 mapRows[i - 1].substring(row1Matcher.start() + 19);
+                                StringBuffer replacement = new StringBuffer();
+                                mapRows[i] = row1Matcher.appendReplacement(replacement, bodyReplace1)
+                                                        .appendTail(replacement).toString();
+                                //                           row1Matcher.replaceAll(bodyReplace1);
+                                replacement = new StringBuffer();
+                                mapRows[i + 1] = row2Matcher.appendReplacement(replacement, bodyReplace2)
+                                                            .appendTail(replacement).toString();
+                                //                                mapRows[i + 1] = row2Matcher.replaceAll(bodyReplace2);
+                            }
+                        }
+                        row2Matcher.reset();
+                    }
+                }
+
+//                if (foundSeaMonsters > 0)
+//                    break search;
+
+                // Rotate and try again
+                mapRows = rotate(mapRows);
+            }
+            // Flip the map and try again
+            ArrayUtils.reverse(mapRows);
+        }
+        System.out.println("Found sea monsters: " + foundSeaMonsters);
         String map = Stream.of(mapRows).collect(Collectors.joining("\n"));
         System.out.println(map);
 
-        // Look for sea monsters
-
         // Count remaining '#'s
+        long remainingHashes = map.chars().filter(c -> c == '#').count();
+
+        System.out.println("There are " + remainingHashes + " remaining \"#\"s.");
+    }
+
+    /**
+     * Rotate an array of strings.
+     * 
+     * @param lines
+     *            The lines of the map.
+     * @return An array of strings based on the rotation of the input.
+     */
+    private static String[] rotate(String[] lines) {
+        char[][] matrix = Stream.of(lines).map(String::toCharArray).collect(Collectors.toList()).toArray(new char[0][0]);
+
+        int size = matrix.length;
+        char[][] ret = new char[size][size];
+
+        // Rotate the matrix 1, or 3 times.
+        for (int i = 0; i < size; ++i)
+            for (int j = 0; j < size; ++j)
+                ret[i][j] = matrix[size - j - 1][i];
+
+        return Stream.of(ret).map(String::new).collect(Collectors.toList()).toArray(new String[0]);
     }
 
     private static class Tile {
