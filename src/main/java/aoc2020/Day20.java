@@ -52,7 +52,7 @@ public class Day20 {
 
     public static void main(String[] args) {
         //        part1();
-                part2();
+        part2();
         //        Tile testTile = new Tile(TEST_TILE);
         //        for (int i = 1; i <= 4; i++) {
         //            System.out.println(testTile);
@@ -64,17 +64,17 @@ public class Day20 {
         //            testTile.rotate(1);
         //        }
 
-//        Tile testTile2 = new Tile(TEST_TILE_2);
-//        testTile2.flipVertical();
-//        System.out.println(testTile2.tileToString());
-//        System.out.println();
-//        System.out.println(testTile2);
-//        System.out.println();
-//        testTile2.rotate(3);
-//        System.out.println(testTile2.tileToString());
-//        System.out.println();
-//        System.out.println(testTile2);
-//        System.out.println();
+        //        Tile testTile2 = new Tile(TEST_TILE_2);
+        //        testTile2.flipVertical();
+        //        System.out.println(testTile2.tileToString());
+        //        System.out.println();
+        //        System.out.println(testTile2);
+        //        System.out.println();
+        //        testTile2.rotate(3);
+        //        System.out.println(testTile2.tileToString());
+        //        System.out.println();
+        //        System.out.println(testTile2);
+        //        System.out.println();
 
     }
 
@@ -114,7 +114,7 @@ public class Day20 {
         Map<Integer, List<Tile>> sideMap = new HashMap<>();
 
         // Parse the input
-        List<Tile> tiles = FileUtils.cleanInput(FileUtils.readFileToStream(TEST_2_PUZZLE_INPUT_TXT))
+        List<Tile> tiles = FileUtils.cleanInput(FileUtils.readFileToStream(PUZZLE_INPUT_TXT))
                                     .map(Tile::new)
                                     //                                    .peek(System.out::println)
                                     .peek(t -> {
@@ -136,7 +136,7 @@ public class Day20 {
                            .get();
         arrangement[0][0] = corner;
 
-        corner.flipVertical();
+//        corner.flipVertical();
         //        System.out.println("Top-left corner: \n" + corner);
 
         // Orient it correctly
@@ -219,14 +219,15 @@ public class Day20 {
         }
         // Look for sea monsters
         int foundSeaMonsters = 0;
-        Pattern body1 = Pattern.compile("#(....)##(....)##(....)###");
-        Pattern body2 = Pattern.compile("(.)#(..)#(..)#(..)#(..)#(..)#");
+        String body1Regex = "#(....)##(....)##(....)###";
+        String body2Regex = "(.)#(..)#(..)#(..)#(..)#(..)#";
+        Pattern body1 = Pattern.compile(body1Regex);
+        Pattern body2 = Pattern.compile(body2Regex);
         String bodyReplace1 = "O$1OO$2OO$3OOO";
         String bodyReplace2 = "$1O$2O$3O$4O$5O$6O";
 
-        //        long startingHashes = Stream.of(mapRows).collect(Collectors.joining("\n")).chars().filter(c -> c == '#').count();
-        //
-        //        System.out.println("There are " + startingHashes + " \"#\"s to start with.");
+        long startingHashes = Stream.of(mapRows).collect(Collectors.joining("\n")).chars().filter(c -> c == '#').count();
+        System.out.println("There are " + startingHashes + " \"#\"s to start with.");
 
         //        ArrayUtils.reverse(mapRows);
         //        mapRows = rotate(mapRows);
@@ -246,13 +247,21 @@ public class Day20 {
                                 foundSeaMonsters++;
                                 mapRows[i - 1] = mapRows[i - 1].substring(0, row1Start + 18) + "O" +
                                                  mapRows[i - 1].substring(row1Start + 19);
-                                StringBuffer replacement = new StringBuffer();
-                                mapRows[i] = row1Matcher.appendReplacement(replacement, bodyReplace1)
-                                                        .appendTail(replacement).toString();
+
+                                mapRows[i] = mapRows[i].substring(0, row1Start) +
+                                             mapRows[i].substring(row1Start, row1Start + 20).replaceAll(body1Regex, bodyReplace1) +
+                                             mapRows[i].substring(row1Start + 20);
+                                mapRows[i + 1] = mapRows[i + 1].substring(0, row2Start) +
+                                                 mapRows[i + 1].substring(row2Start, row2Start + 17).replaceAll(body2Regex, bodyReplace2) +
+                                                 mapRows[i + 1].substring(row2Start + 17);
+
+                                //                                StringBuffer replacement = new StringBuffer();
+                                //                                mapRows[i] = row1Matcher.appendReplacement(replacement, bodyReplace1)
+                                //                                                        .appendTail(replacement).toString();
                                 //                           row1Matcher.replaceAll(bodyReplace1);
-                                replacement = new StringBuffer();
-                                mapRows[i + 1] = row2Matcher.appendReplacement(replacement, bodyReplace2)
-                                                            .appendTail(replacement).toString();
+                                //                                replacement = new StringBuffer();
+                                //                                mapRows[i + 1] = row2Matcher.appendReplacement(replacement, bodyReplace2)
+                                //                                                            .appendTail(replacement).toString();
                                 //                                mapRows[i + 1] = row2Matcher.replaceAll(bodyReplace2);
                             }
                             row2Matcher.region(row2Start + 1, mapRows[i].length());
@@ -404,33 +413,33 @@ public class Day20 {
             Collections.rotate(sides, times);
             Collections.rotate(sidesFlipped, -times);
 
-//            if (times % 4 == 2) {
-//                Stream.of(data).forEach(ArrayUtils::reverse);
-//                ArrayUtils.reverse(data);
-//                Stream.of(fullData).forEach(ArrayUtils::reverse);
-//                ArrayUtils.reverse(fullData);
-//            } else if (times % 2 == 1) {
-                int size = data.length;
+            //            if (times % 4 == 2) {
+            //                Stream.of(data).forEach(ArrayUtils::reverse);
+            //                ArrayUtils.reverse(data);
+            //                Stream.of(fullData).forEach(ArrayUtils::reverse);
+            //                ArrayUtils.reverse(fullData);
+            //            } else if (times % 2 == 1) {
+            int size = data.length;
 
-                // Rotate the matrix.
-                for (int time = 0; time < times % 4; time++) {
-                    char[][] ret = new char[size][size];
-                    for (int i = 0; i < size; ++i)
-                        for (int j = 0; j < size; ++j)
-                            ret[i][j] = data[size - j - 1][i];
-                    data = ret;
-                }
-                int size2 = fullData.length;
+            // Rotate the matrix.
+            for (int time = 0; time < times % 4; time++) {
+                char[][] ret = new char[size][size];
+                for (int i = 0; i < size; ++i)
+                    for (int j = 0; j < size; ++j)
+                        ret[i][j] = data[size - j - 1][i];
+                data = ret;
+            }
+            int size2 = fullData.length;
 
-                // Rotate the matrix.
-                for (int time = 0; time < times % 4; time++) {
-                    char[][] ret2 = new char[size2][size2];
-                    for (int i = 0; i < size2; ++i)
-                        for (int j = 0; j < size2; ++j)
-                            ret2[i][j] = fullData[size2 - j - 1][i];
-                    fullData = ret2;
-                }
-//            }
+            // Rotate the matrix.
+            for (int time = 0; time < times % 4; time++) {
+                char[][] ret2 = new char[size2][size2];
+                for (int i = 0; i < size2; ++i)
+                    for (int j = 0; j < size2; ++j)
+                        ret2[i][j] = fullData[size2 - j - 1][i];
+                fullData = ret2;
+            }
+            //            }
         }
 
         /**
