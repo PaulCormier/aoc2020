@@ -1,10 +1,12 @@
 package aoc2020;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -25,16 +27,18 @@ public class Day21 {
     private static final String TEST_PUZZLE_INPUT_TXT = "TestInput-Day21.txt";
 
     public static void main(String[] args) {
-        part1();
-        part2();
+        Map<String, String> allergenIngerdients = part1();
+        part2(allergenIngerdients);
 
     }
 
     /**
      * Determine which ingredients cannot possibly contain any of the allergens
      * in your list. How many times do any of those ingredients appear?
+     * 
+     * @return
      */
-    private static void part1() {
+    private static Map<String, String> part1() {
         Set<String> ingredients = new HashSet<>();
         Set<String> allergens = new HashSet<>();
 
@@ -98,11 +102,22 @@ public class Day21 {
                               .mapToInt(f -> CollectionUtils.intersection(f.getIngredients(), leftoverIngredients).size())
                               .sum();
         System.out.println("The ingredients appear " + solution + " times.");
+
+        return allergenIngredients;
     }
 
     /**
+     * What is your canonical dangerous ingredient list?
+     * 
+     * @param allergenIngredients
+     *            The mapping of ingredients to allergens from part 1.
      */
-    private static void part2() {
+    private static void part2(Map<String, String> allergenIngredients) {
+        System.out.println(allergenIngredients.entrySet()
+                                              .stream()
+                                              .sorted(Comparator.comparing(Entry::getValue))
+                                              .map(Entry::getKey)
+                                              .collect(Collectors.joining(",")));
     }
 
     private static class Food {
