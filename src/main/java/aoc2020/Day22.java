@@ -116,18 +116,16 @@ public class Day22 {
 
     private static void recursiveCombat(Queue<Integer> player1Hand, Queue<Integer> player2Hand) {
         // Keep track of the previous hands
-        Set<List<Integer>> previousHands = new HashSet<>();
+        Set<String> previousHands = new HashSet<>();
 
         // Play until a player runs out of cards.
         int round = 1;
         while (player1Hand.size() > 0 && player2Hand.size() > 0) {
-//            System.out.printf("-- Round %d --%n", round++);
-//            System.out.printf("Player 1's deck: %s%nPlayer 2's deck: %s%n", player1Hand, player2Hand);
+            //            System.out.printf("-- Round %d --%n", round++);
+            //            System.out.printf("Player 1's deck: %s%nPlayer 2's deck: %s%n", player1Hand, player2Hand);
 
-            // Check for a previously played combination
-            ArrayList<Integer> playedCombination = new ArrayList<>(player1Hand);
-            playedCombination.addAll(player2Hand);
-            if (!previousHands.add(playedCombination)) {
+            // Check for a previously played combination (not just the two values concatenated)
+            if (!previousHands.add(player1Hand + "|" + player2Hand)) {
                 // Player 1 wins
                 player2Hand.clear();
                 return;
@@ -135,28 +133,28 @@ public class Day22 {
 
             Integer player1Card = player1Hand.remove();
             Integer player2Card = player2Hand.remove();
-//            System.out.printf("Player 1 plays: %d%nPlayer 2 plays: %d%n", player1Card, player2Card);
+            //            System.out.printf("Player 1 plays: %d%nPlayer 2 plays: %d%n", player1Card, player2Card);
             if (player1Hand.size() >= player1Card && player2Hand.size() >= player2Card) {
-//                System.out.println("Playing a sub-game to determine the winner...\n");
+                //                System.out.println("Playing a sub-game to determine the winner...\n");
                 // Play a new game of Recursive Combat
                 Queue<Integer> newPlayer1Hand = player1Hand.stream().limit(player1Card).collect(Collectors.toCollection(ArrayDeque::new));
                 Queue<Integer> newPlayer2Hand = player2Hand.stream().limit(player2Card).collect(Collectors.toCollection(ArrayDeque::new));
                 recursiveCombat(newPlayer1Hand, newPlayer2Hand);
                 if (newPlayer2Hand.isEmpty()) {
-//                    System.out.println("Player 1 wins the round!\n");
+                    //                    System.out.println("Player 1 wins the round!\n");
                     player1Hand.add(player1Card);
                     player1Hand.add(player2Card);
                 } else {
-//                    System.out.println("Player 2 wins the round!\n");
+                    //                    System.out.println("Player 2 wins the round!\n");
                     player2Hand.add(player2Card);
                     player2Hand.add(player1Card);
                 }
             } else if (player1Card > player2Card) {
-//                System.out.println("Player 1 wins the round!\n");
+                //                System.out.println("Player 1 wins the round!\n");
                 player1Hand.add(player1Card);
                 player1Hand.add(player2Card);
             } else if (player1Card < player2Card) {
-//                System.out.println("Player 2 wins the round!\n");
+                //                System.out.println("Player 2 wins the round!\n");
                 player2Hand.add(player2Card);
                 player2Hand.add(player1Card);
             } /*else {
