@@ -120,7 +120,7 @@ public class Day23 {
         // long totalMoves = 10_000_000;
         int maxNuber = 1_000_000;
 
-//        long move = 1;
+        // long move = 1;
         LinkedList<Integer> circle = TEST_PUZZLE_INPUT.chars().map(c -> c - '0').boxed()
                                                       .collect(Collectors.toCollection(LinkedList::new));
         // Now add the rest of the numbers... to 1,000,000
@@ -128,7 +128,7 @@ public class Day23 {
 
         // System.out.println("Max size: "+ maxNuber +" Circle size: "+circle.size());
         long start = System.currentTimeMillis();
-        System.out.printf("Part 2... %tT.%1$tL%n", start);
+        System.out.printf("\nPart 2... %tT.%1$tL%n", start);
 
         playCrabCups(circle, totalMoves);
 
@@ -201,7 +201,9 @@ public class Day23 {
         // System.out.println(circle.stream().map(Object::toString).collect(Collectors.joining()));
         */
         long end = System.currentTimeMillis();
-        System.out.println(Duration.ofMillis(end - start));
+        System.out.println("This run: " + Duration.ofMillis(end - start));
+        System.out.println("Estimate for 10,000,000 runs: "
+                           + Duration.ofMillis((end - start) * 10_000_000L / totalMoves));
         // System.out.printf("%tT.%d%n",end-start);
 
         int indexOf1 = circle.indexOf(1);
@@ -216,6 +218,79 @@ public class Day23 {
      * @param totalMoves The number of moves to perform.
      */
     private static void playCrabCups(LinkedList<Integer> circle, long totalMoves) {
+        boolean debug = false;
+
+        int maxNumber = circle.size();
+        int move = 1;
+//        int currentCupIndex = 0;
+        Integer currentCup;
+        int destinationIndex;
+        Integer destinationCup;
+        List<Integer> heldCups=new ArrayList<>();
+        while (move <= totalMoves) {
+            if (debug)
+                System.out.println("-- move " + move + " --");
+            currentCup = circle.pop();
+            circle.add(currentCup);
+
+            if (debug)
+                System.out.println("cups: " + circle.stream()
+                                                    .map(Object::toString)
+                                                    .collect(Collectors.joining(" ")));
+
+            // The crab picks up the three cups that are immediately clockwise of the
+            // current cup. They are removed from the circle; cup spacing is adjusted as
+            // necessary to maintain the circle.
+            heldCups.clear();
+            heldCups.add(circle.pop());
+            heldCups.add(circle.pop());
+            heldCups.add(circle.pop());
+//            heldCups = new ArrayList<>(circle.subList(currentCupIndex + 1, Math.min(maxNumber, currentCupIndex + 4)));
+//            heldCups.addAll(circle.subList(0, Math.max(0, (currentCupIndex + 4 - maxNumber))));
+//            circle.removeAll(heldCups);
+            if (debug)
+                System.out.println("pick up: " + heldCups.stream()
+                                                         .map(Object::toString)
+                                                         .collect(Collectors.joining(", ")));
+
+            // The crab selects a destination cup: the cup with a label equal to the current
+            // cup's label minus one. If this would select one of the cups that was just
+            // picked up, the crab will keep subtracting one until it finds a cup that
+            // wasn't just picked up. If at any point in this process the value goes below
+            // the lowest value on any cup's label, it wraps around to the highest value on
+            // any cup's label instead.
+            destinationCup = currentCup == 1 ? maxNumber : currentCup - 1;
+            while (destinationCup > 0 && heldCups.contains(destinationCup)) {
+                destinationCup--;
+                if (destinationCup == 0)
+                    destinationCup = maxNumber;
+            }
+            if (debug)
+                System.out.println("destination: " + destinationCup);
+
+            // The crab places the cups it just picked up so that they are immediately
+            // clockwise of the destination cup. They keep the same order as when they were
+            // picked up.
+            destinationIndex = circle.indexOf(destinationCup);
+            circle.addAll(destinationIndex + 1, heldCups);
+
+            // The crab selects a new current cup: the cup which is immediately clockwise of
+            // the current cup.
+//            currentCupIndex = (circle.indexOf(currentCup) + 1) % maxNumber;
+            move++;
+            if (debug)
+                System.out.println();
+        }
+    }
+
+    /**
+     * Play the Crab Cups game a certain number of times. The circle of cups will be
+     * shuffled a number of times.
+     * 
+     * @param circle The initial circle of cups.
+     * @param totalMoves The number of moves to perform.
+     */
+    private static void playCrabCups_old(LinkedList<Integer> circle, long totalMoves) {
 
         int maxNumber = circle.size();
         int move = 1;
