@@ -6,11 +6,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import org.apache.commons.collections4.list.TreeList;
 
 /**
  * Crab Cups
@@ -95,7 +95,8 @@ public class Day23 {
             move++;
         }*/
 
-        playCrabCups(circle, 100L);
+//        playCrabCups(circle, 100L);
+        playCrabCups(new Circle<>(circle),circle.get(0), 100L);
 
         System.out.println("-- final --");
         System.out.println("cups: " + circle);
@@ -115,16 +116,24 @@ public class Day23 {
         int maxNuber = 1_000_000;
 
         // long move = 1;
-        ArrayList<Integer> circle = TEST_PUZZLE_INPUT.chars().map(c -> c - '0').boxed()
-                                                     .collect(Collectors.toCollection(ArrayList::new));
+        // ArrayList<Integer> circle = TEST_PUZZLE_INPUT.chars().map(c -> c -
+        // '0').boxed()
+        // .collect(Collectors.toCollection(ArrayList::new));
+        // // Now add the rest of the numbers... to 1,000,000
+        // circle.addAll(IntStream.rangeClosed(10,
+        // maxNuber).boxed().collect(Collectors.toList()));
+
+        List<Integer> cups = TEST_PUZZLE_INPUT.chars().map(c -> c - '0').boxed()
+                                              .collect(Collectors.toList());
         // Now add the rest of the numbers... to 1,000,000
-        circle.addAll(IntStream.rangeClosed(10, maxNuber).boxed().collect(Collectors.toList()));
+        cups.addAll(IntStream.rangeClosed(10, maxNuber).boxed().collect(Collectors.toList()));
+        Circle<Integer> circle = new Circle<>(cups);
 
         // System.out.println("Max size: "+ maxNuber +" Circle size: "+circle.size());
         long start = System.currentTimeMillis();
         System.out.printf("\nPart 2... %tT.%1$tL%n", start);
 
-        playCrabCups(circle, totalMoves);
+        playCrabCups(circle, cups.get(0), totalMoves);
 
         long end = System.currentTimeMillis();
         System.out.println("This run: " + Duration.ofMillis(end - start));
@@ -132,8 +141,107 @@ public class Day23 {
                            + Duration.ofMillis((end - start) * 10_000_000L / totalMoves));
         // System.out.printf("%tT.%d%n",end-start);
 
-        int indexOf1 = circle.indexOf(1);
-        System.out.println(circle.get((indexOf1 + 1) % maxNuber) + " and " + circle.get((indexOf1 + 2) % maxNuber));
+        Circle.Node cup1 = circle.get(1);
+        System.out.println(cup1.next.item + " and " + cup1.next.next.item);
+        // int indexOf1 = circle.indexOf(1);
+        // System.out.println(circle.get((indexOf1 + 1) % maxNuber) + " and " +
+        // circle.get((indexOf1 + 2) % maxNuber));
+    }
+
+    /**
+     * Play the Crab Cups game a certain number of times. The circle of cups will be
+     * shuffled a number of times.
+     * 
+     * @param circle The initial circle of cups.
+     * @param totalMoves The number of moves to perform.
+     * @param startingValue
+     */
+    private static void playCrabCups(Circle<Integer> circle, int startingValue, long totalMoves) {
+        boolean debug = false;
+
+        int maxNumber = circle.size();
+        int move = 1;
+        // int currentCupIndex = 0;
+        Circle.Node currentCup = circle.get(startingValue);
+        // int destinationIndex;
+        int destinationCup;
+        // List<Integer> heldCups=new ArrayList<>();
+        Circle.Node heldCups;
+        while (move <= totalMoves) {
+            if (debug)
+                System.out.println("-- move " + move + " --");
+            // currentCup = circle.remove(0);
+            // circle.add(currentCup);
+
+            if (debug) {
+                List<Integer> tempCircle = new LinkedList<>();
+                Circle.Node tempCup = currentCup;
+                do {
+                    tempCircle.add(tempCup.item);
+                    tempCup = tempCup.next;
+                } while (tempCup != currentCup);
+                System.out.println("cups: " + tempCircle.stream()
+                                                        .map(Object::toString)
+                                                        .collect(Collectors.joining(" ")));
+            }
+
+            // The crab picks up the three cups that are immediately clockwise of the
+            // current cup. They are removed from the circle; cup spacing is adjusted as
+            // necessary to maintain the circle.
+            heldCups = circle.removeNext(currentCup, 3);
+            // heldCups[0] = circle.remove(0);
+            // heldCups[1] = circle.remove(0);
+            // heldCups[2] = circle.remove(0);
+            // heldCups.clear();
+            // heldCups.add(circle.poll());
+            // heldCups.add(circle.poll());
+            // heldCups.add(circle.poll());
+            // heldCups = new ArrayList<>(circle.subList(currentCupIndex + 1,
+            // Math.min(maxNumber, currentCupIndex + 4)));
+            // heldCups.addAll(circle.subList(0, Math.max(0, (currentCupIndex + 4 -
+            // maxNumber))));
+            // circle.removeAll(heldCups);
+            if (debug)
+                // System.out.println("pick up: " + heldCups.stream()
+                System.out.println("pick up: " + Stream.of(heldCups.item, heldCups.next.item, heldCups.next.next.item)
+                                                       .map(Object::toString)
+                                                       .collect(Collectors.joining(", ")));
+
+            // The crab selects a destination cup: the cup with a label equal to the current
+            // cup's label minus one. If this would select one of the cups that was just
+            // picked up, the crab will keep subtracting one until it finds a cup that
+            // wasn't just picked up. If at any point in this process the value goes below
+            // the lowest value on any cup's label, it wraps around to the highest value on
+            // any cup's label instead.
+            destinationCup = currentCup.item == 1 ? maxNumber : currentCup.item - 1;
+            // while (destinationCup > 0 && heldCups.contains(destinationCup)) {
+            while (destinationCup > 0 && (heldCups.item == destinationCup || heldCups.next.item == destinationCup
+                                          || heldCups.next.next.item == destinationCup)) {
+                destinationCup--;
+                if (destinationCup == 0)
+                    destinationCup = maxNumber;
+            }
+            if (debug)
+                System.out.println("destination: " + destinationCup);
+
+            // The crab places the cups it just picked up so that they are immediately
+            // clockwise of the destination cup. They keep the same order as when they were
+            // picked up.
+            circle.addAfter(circle.get(destinationCup), heldCups);
+            // destinationIndex = circle.indexOf(destinationCup) + 1;
+            // circle.addAll(destinationIndex, Arrays.asList(heldCups));
+            // circle.add(destinationIndex, heldCups[2]);
+            // circle.add(destinationIndex, heldCups[1]);
+            // circle.add(destinationIndex, heldCups[0]);
+
+            // The crab selects a new current cup: the cup which is immediately clockwise of
+            // the current cup.
+            // currentCupIndex = (circle.indexOf(currentCup) + 1) % maxNumber;
+            currentCup = currentCup.next;
+            move++;
+            if (debug)
+                System.out.println();
+        }
     }
 
     /**
@@ -378,5 +486,169 @@ public class Day23 {
             move++;
         }
     }
+
+    private static class Circle<E> {
+        /**
+         * A uni-directional linked list node.
+         *
+         * @param <E> The value of the node.
+         */
+        protected static class Node {
+            int item;
+            Node next;
+
+            Node(int element, Node next) {
+                this.item = element;
+                this.next = next;
+            }
+
+        }
+
+        /**
+         * To improve performance of the indexOf operation, all nodes are stored in a
+         * set.
+         */
+        private final Node[] index;
+
+        public Circle(List<Integer> otherList) {
+            index = new Node[otherList.size()];
+
+            Node lastElement = new Node(otherList.get(otherList.size() - 1), null);
+            index[lastElement.item-1] = lastElement;
+            Node nextElement = lastElement;
+            for (int i = otherList.size() - 2; i > 0; i--) {
+                nextElement = new Node(otherList.get(i), nextElement);
+                index[nextElement.item-1] = nextElement;
+            }
+            Node firstElement = new Node(otherList.get(0), nextElement);
+            index[firstElement.item-1] = firstElement;
+            lastElement.next = firstElement;
+        }
+
+        public void addAfter(Node node, Node heldCups) {
+            Node nextNode = node.next;
+            node.next = heldCups;
+            Node lastNode = nextNode;
+            while (lastNode.next != null)
+                lastNode = lastNode.next;
+            lastNode.next = nextNode;
+        }
+
+        public Node removeNext(Node node, int number) {
+            Node nextNode = node.next;
+            Node lastNode = nextNode;
+            while (--number > 0) {
+                lastNode = lastNode.next;
+            }
+            node.next = lastNode.next;
+            lastNode.next = null;
+            return nextNode;
+        }
+
+        public int size() {
+            return index.length;
+        }
+
+        public Node get(int value) {
+            return index[value-1];
+        }
+
+    }
+    /*private static class Circle<E> {
+        *//**
+            * A uni-directional linked list node.
+            *
+            * @param <E> The value of the node.
+            */
+    /*
+    protected static class Node<E> {
+     E item;
+     Node<E> next;
+    
+     Node(E element, Node<E> next) {
+         this.item = element;
+         this.next = next;
+     }
+    
+     @Override
+     public int hashCode() {
+         final int prime = 31;
+         int result = 1;
+         result = prime * result + ((item == null) ? 0 : item.hashCode());
+         return result;
+     }
+    
+     @Override
+     public boolean equals(Object obj) {
+         if (this == obj)
+             return true;
+         if (obj == null)
+             return false;
+         if (getClass() != obj.getClass())
+             return false;
+         Node other = (Node) obj;
+         if (item == null) {
+             if (other.item != null)
+                 return false;
+         } else if (!item.equals(other.item))
+             return false;
+         return true;
+     }
+    
+    }
+    
+    *//**
+        * To improve performance of the indexOf operation, all nodes are stored in a
+        * set.
+        *//*
+          private final Map<E, Node<E>> index;
+          
+          public Circle() {
+           this.index = new TreeMap<>();
+          }
+          
+          public void addAfter(Node<E> node, Node<E> heldCups) {
+           Node<E> nextNode = node.next;
+           node.next = heldCups;
+           Node<E> lastNode = nextNode;
+           while (lastNode.next != null)
+               lastNode = lastNode.next;
+           lastNode.next = nextNode;
+          }
+          
+          public Node<E> removeNext(Node<E> node, int number) {
+           Node<E> nextNode = node.next;
+           Node<E> lastNode = nextNode;
+           while (--number > 0) {
+               lastNode = lastNode.next;
+           }
+           node.next = lastNode.next;
+           lastNode.next = null;
+           return nextNode;
+          }
+          
+          public int size() {
+           return index.size();
+          }
+          
+          public Node<E> get(E value) {
+           return index.get(value);
+          }
+          
+          public Circle(List<E> otherList) {
+           this();
+          
+           Node<E> lastElement = new Node<>(otherList.get(otherList.size() - 1), null);
+           index.put(lastElement.item, lastElement);
+           Node<E> nextElement = lastElement;
+           for (int i = otherList.size() - 2; i > 0; i--) {
+               nextElement = new Node<>(otherList.get(i), nextElement);
+               index.put(nextElement.item, nextElement);
+           }
+           Node<E> firstElement = new Node<>(otherList.get(0), nextElement);
+           index.put(firstElement.item, firstElement);
+           lastElement.next = firstElement;
+          }
+          }*/
 
 }
